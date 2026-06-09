@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chirag Sports Portal — Member Desk</title>
   
-  <link rel="manifest" href="/manifest.json?v=2.0.0">
+  <link rel="manifest" href="/manifest.json?v=3.0.0">
   <meta name="theme-color" content="#020617">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link class="app-main-icon-src" rel="apple-touch-icon" href="/icon-192.png?v=2.0.0">
+  <link class="app-main-icon-src" rel="apple-touch-icon" href="/icon-192.png?v=3.0.0">
 
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -36,11 +36,10 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        // 🧼 FORCE SERVICE WORKER TO RE-FETCH TO UPDATE THE VAULT
-        navigator.serviceWorker.register("/service-worker.js?v=2.0.0")
+        navigator.serviceWorker.register("/service-worker.js?v=3.0.0")
           .then(reg => {
             console.log("✓ Mobile App Engine Active.");
-            reg.update(); // Automatically update in the background if a change is detected
+            reg.update();
           })
           .catch(err => console.log("× Service Engine Error: ", err));
       });
@@ -51,7 +50,7 @@
 
   <div id="appFirstBootSplashScreen">
     <div class="relative flex flex-col items-center">
-      <img src="/icon-512.png?v=2.0.0" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
+      <img src="/icon-512.png?v=3.0.0" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
       <div class="mt-6 text-center">
         <h1 class="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-400">Pickle At</h1>
         <h2 class="text-3xl font-black tracking-tight text-white uppercase mt-0.5 filter drop-shadow-md">Chirag</h2>
@@ -80,7 +79,7 @@
     </div>
   </div>
 
-  <main class="p-4 max-w-xl mx-auto w-full flex-1 p-4 max-w-xl mx-auto w-full flex-1 flex flex-col justify-center">
+  <main class="p-4 max-w-xl mx-auto w-full flex-1 flex flex-col justify-center">
     
     <div id="viewLoginPanel" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
       <div class="text-center space-y-1">
@@ -240,11 +239,21 @@
       "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", 
       "19:00 - 20:00", "20:00 - 21:00"
     ];
-    let selectedUserAsset = "Pickleball Court 1", selectedUserDateStr = "", userActiveBookingsLogs = [], sessionMemberProfile = null;
-    let selectedTentativeSlotMemory = "", activeUserLogTab = "upcoming", secureUserSessionToken = "";
+
+    // ⚡ HIGH-PRIORITY: EXTRACT STORAGE DATA FIRST BEFORE ANY RENDERING LOOPS
+    let secureUserSessionToken = localStorage.getItem('chirag_session_token') || "";
+    let sessionMemberProfile = null;
+    try {
+      const savedProfile = localStorage.getItem('chirag_member_profile');
+      if (savedProfile) sessionMemberProfile = JSON.parse(savedProfile);
+    } catch(e) { console.log(e); }
+
+    let selectedUserAsset = "Pickleball Court 1", selectedUserDateStr = "", userActiveBookingsLogs = [];
+    let selectedTentativeSlotMemory = "", activeUserLogTab = "upcoming";
     let deferredPromptInstance = null;
 
     window.addEventListener('DOMContentLoaded', () => {
+        // Hide splash screen after boot load sequence
         setTimeout(() => {
             const splash = document.getElementById('appFirstBootSplashScreen');
             if (splash) {
@@ -252,22 +261,19 @@
                 setTimeout(() => splash.remove(), 500);
             }
         }, 1000);
+        
         initiateSmartPwaBannerSystem();
 
-        // 🔥 LIFECYCLE AUTO-LOGIN INITIALIZATION CHECKS
-        const savedToken = localStorage.getItem('chirag_session_token');
-        const savedProfile = localStorage.getItem('chirag_member_profile');
-
-        if (savedToken && savedProfile) {
-            secureUserSessionToken = savedToken;
-            sessionMemberProfile = JSON.parse(savedProfile);
-
+        // ⚡ RUN THE PERSISTENT SESSION AUTO-INJECTION ROUTINE
+        if (secureUserSessionToken && sessionMemberProfile) {
             document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
             document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
             
             toggleInterfaceView('workspace');
             initUserCalendarStrip();
             startPollingLiveWorkspaceLogs();
+        } else {
+            toggleInterfaceView('login');
         }
     });
 
@@ -423,7 +429,7 @@
             secureUserSessionToken = res.token;
             sessionMemberProfile = res.user;
 
-            // 💾 COMMIT UNIQUE IDENTITY VAULT ARRAYS PERMANENTLY
+            // Save values directly inside local long-term storage
             localStorage.setItem('chirag_session_token', secureUserSessionToken);
             localStorage.setItem('chirag_member_profile', JSON.stringify(sessionMemberProfile));
 
@@ -646,7 +652,6 @@
 
     function executeLogoutSequence() {
         if(confirm("Confirm logging out of active workspace context?")) {
-            // 🚨 CLEANSE PERSISTENT VAULT DATA CACHES
             localStorage.removeItem('chirag_session_token');
             localStorage.removeItem('chirag_member_profile');
 
