@@ -8,14 +8,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ⚡ LIVE SYNCHRONIZED GOOGLE PIECES STREAM URL
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbw7OPzs7gyP7zleHnFCgKmI_924LzjX7X6MZynWrP2P7_3zEogJ8GacD1WAwSk7Nlx4ZA/exec";
+// ⚡ YOUR NEW SYNCHRONIZED GOOGLE PIECES STREAM URL
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxbiHJTFD4f7OmCoG8AfpV79IkEoqVZ8WWEUJ0PuIs40VWB41rDRyjnVzb5Zb7BUHkyJQ/exec";
 
 let masterCachedUsersRegistry = [];
 let masterCachedBookingsRegistry = [];
 let customGlobalTickerMemory = "Welcome to the Pickle at Chirag Portal! Use your secure password to manage your active booking.";
 
-// Continually pools and imports your real sheet data rows every 6 seconds
+// Pools your real sheet data rows every 6 seconds
 async function syncDatabaseFromGoogleSheets() {
     try {
         const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
@@ -57,7 +57,6 @@ app.post('/api/login', (req, res) => {
 // 2. MEMBER ACCOUNT REGISTRATION PIPELINE
 app.post('/api/register', async (req, res) => {
     const { email, fullName, registrationCode, password } = req.body;
-    
     try {
         const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
         const response = await fetch(GOOGLE_SHEETS_API_URL, {
@@ -71,7 +70,6 @@ app.post('/api/register', async (req, res) => {
                 password: password.trim()
             })
         });
-        
         const result = await response.json();
         if (result.status === "success") {
             setTimeout(syncDatabaseFromGoogleSheets, 1000);
@@ -114,7 +112,29 @@ app.post('/api/admin-update-ticker', (req, res) => {
     res.json({ status: "success" });
 });
 
-// 5. ADMINISTRATIVE REGISTRY FETCHES
+// 5. SECURE LIVE GOOGLE SHEET CANCELLATION LINK PATHWAY
+app.post('/api/admin-force-cancel-booking', async (req, res) => {
+    const { bookingId } = req.body;
+    try {
+        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+        const response = await fetch(GOOGLE_SHEETS_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: "removeBooking", bookingId })
+        });
+        const result = await response.json();
+        if (result.status === "success") {
+            setTimeout(syncDatabaseFromGoogleSheets, 1000);
+            res.json({ status: "success" });
+        } else {
+            res.json({ status: "error", message: result.message || "Cancellation rejected by Google." });
+        }
+    } catch (e) {
+        res.json({ status: "error", message: "Communication error to database script." });
+    }
+});
+
+// 6. ADMINISTRATIVE REGISTRY FETCHES
 app.post('/api/admin-fetch-dashboard-snapshot', (req, res) => {
     res.json({ users: masterCachedUsersRegistry, bookings: masterCachedBookingsRegistry });
 });
