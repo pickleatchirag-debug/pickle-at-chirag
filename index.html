@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chirag Sports Portal — Member Desk</title>
   
-  <link rel="manifest" href="/manifest.json?v=3.0.0">
+  <link rel="manifest" href="/manifest.json?v=4.0.0">
   <meta name="theme-color" content="#020617">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link class="app-main-icon-src" rel="apple-touch-icon" href="/icon-192.png?v=3.0.0">
+  <link class="app-main-icon-src" rel="apple-touch-icon" href="/icon-192.png?v=4.0.0">
 
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -36,7 +36,7 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/service-worker.js?v=3.0.0")
+        navigator.serviceWorker.register("/service-worker.js?v=4.0.0")
           .then(reg => {
             console.log("✓ Mobile App Engine Active.");
             reg.update();
@@ -50,7 +50,7 @@
 
   <div id="appFirstBootSplashScreen">
     <div class="relative flex flex-col items-center">
-      <img src="/icon-512.png?v=3.0.0" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
+      <img src="/icon-512.png?v=4.0.0" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
       <div class="mt-6 text-center">
         <h1 class="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-400">Pickle At</h1>
         <h2 class="text-3xl font-black tracking-tight text-white uppercase mt-0.5 filter drop-shadow-md">Chirag</h2>
@@ -86,19 +86,21 @@
         <h2 class="text-xs font-black tracking-widest uppercase text-red-500">Welcome Back</h2>
         <p class="text-xl font-black text-slate-100 tracking-tight">Log Into Resident Portal</p>
       </div>
-      <div class="space-y-3 pt-2">
+      
+      <form id="coreLoginFormHub" onsubmit="event.preventDefault(); executeMemberLoginHandshake();" class="space-y-3 pt-2">
         <div class="space-y-1">
           <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Google Email Address</label>
-          <input type="email" id="loginEmailField" placeholder="name@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-red-500 text-slate-100 placeholder-slate-600 font-mono">
+          <input type="email" id="loginEmailField" name="username" autocomplete="username" placeholder="name@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-red-500 text-slate-100 placeholder-slate-600 font-mono">
         </div>
         <div class="space-y-1">
           <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Personal Password Key</label>
-          <input type="password" id="loginPasswordField" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-red-500 text-slate-100 placeholder-slate-700 tracking-widest">
+          <input type="password" id="loginPasswordField" name="password" autocomplete="current-password" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-red-500 text-slate-100 placeholder-slate-700 tracking-widest">
         </div>
-        <button onclick="executeMemberLoginHandshake()" class="w-full bg-gradient-to-r from-red-500 to-amber-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
+        <button type="submit" class="w-full bg-gradient-to-r from-red-500 to-amber-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
           Sign Into Dashboard
         </button>
-      </div>
+      </form>
+      
       <div class="flex justify-between items-center pt-3 border-t border-slate-800/60 text-xs">
         <p class="text-slate-400">New player? <button onclick="toggleInterfaceView('register')" class="text-amber-400 font-bold hover:underline cursor-pointer">Register</button></p>
         <button onclick="toggleInterfaceView('reset')" class="text-cyan-400 font-bold hover:underline cursor-pointer">Forgot Password?</button>
@@ -240,7 +242,7 @@
       "19:00 - 20:00", "20:00 - 21:00"
     ];
 
-    // ⚡ HIGH-PRIORITY: EXTRACT STORAGE DATA FIRST BEFORE ANY RENDERING LOOPS
+    // ⚡ INTERCEPT LIFECYCLE: EXTRACT & LOCK THE AUTO-LOGIN PERMANENTLY AS SOON AS APP LOADS
     let secureUserSessionToken = localStorage.getItem('chirag_session_token') || "";
     let sessionMemberProfile = null;
     try {
@@ -252,8 +254,26 @@
     let selectedTentativeSlotMemory = "", activeUserLogTab = "upcoming";
     let deferredPromptInstance = null;
 
+    // Execute instant routing behavior BEFORE the browser builds layout elements
+    function executeDirectViewRouting() {
+      if (secureUserSessionToken && sessionMemberProfile) {
+         // Force dashboard view structures immediately open
+         document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
+            document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
+            toggleInterfaceView('workspace');
+            initUserCalendarStrip();
+            startPollingLiveWorkspaceLogs();
+         });
+      } else {
+         document.addEventListener("DOMContentLoaded", () => {
+            toggleInterfaceView('login');
+         });
+      }
+    }
+    executeDirectViewRouting();
+
     window.addEventListener('DOMContentLoaded', () => {
-        // Hide splash screen after boot load sequence
         setTimeout(() => {
             const splash = document.getElementById('appFirstBootSplashScreen');
             if (splash) {
@@ -261,20 +281,7 @@
                 setTimeout(() => splash.remove(), 500);
             }
         }, 1000);
-        
         initiateSmartPwaBannerSystem();
-
-        // ⚡ RUN THE PERSISTENT SESSION AUTO-INJECTION ROUTINE
-        if (secureUserSessionToken && sessionMemberProfile) {
-            document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
-            document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
-            
-            toggleInterfaceView('workspace');
-            initUserCalendarStrip();
-            startPollingLiveWorkspaceLogs();
-        } else {
-            toggleInterfaceView('login');
-        }
     });
 
     function initiateSmartPwaBannerSystem() {
@@ -429,7 +436,6 @@
             secureUserSessionToken = res.token;
             sessionMemberProfile = res.user;
 
-            // Save values directly inside local long-term storage
             localStorage.setItem('chirag_session_token', secureUserSessionToken);
             localStorage.setItem('chirag_member_profile', JSON.stringify(sessionMemberProfile));
 
