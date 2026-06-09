@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chirag Sports Portal — Member Desk</title>
   
-  <link rel="manifest" href="/manifest.json?v=4.0.0">
+  <link rel="manifest" href="/manifest.json?v=5.0.0">
   <meta name="theme-color" content="#020617">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link class="app-main-icon-src" rel="apple-touch-icon" href="/icon-192.png?v=4.0.0">
+  <link class="app-main-icon-src" rel="apple-touch-icon" href="/icon-192.png?v=5.0.0">
 
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -36,7 +36,7 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/service-worker.js?v=4.0.0")
+        navigator.serviceWorker.register("/service-worker.js?v=5.0.0")
           .then(reg => {
             console.log("✓ Mobile App Engine Active.");
             reg.update();
@@ -50,7 +50,7 @@
 
   <div id="appFirstBootSplashScreen">
     <div class="relative flex flex-col items-center">
-      <img src="/icon-512.png?v=4.0.0" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
+      <img src="/icon-512.png?v=5.0.0" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
       <div class="mt-6 text-center">
         <h1 class="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-400">Pickle At</h1>
         <h2 class="text-3xl font-black tracking-tight text-white uppercase mt-0.5 filter drop-shadow-md">Chirag</h2>
@@ -242,7 +242,7 @@
       "19:00 - 20:00", "20:00 - 21:00"
     ];
 
-    // ⚡ INTERCEPT LIFECYCLE: EXTRACT & LOCK THE AUTO-LOGIN PERMANENTLY AS SOON AS APP LOADS
+    // ⚡ INSTANT LOGIC EVALUATION (No Event Listeners allowed to delay this block)
     let secureUserSessionToken = localStorage.getItem('chirag_session_token') || "";
     let sessionMemberProfile = null;
     try {
@@ -254,26 +254,9 @@
     let selectedTentativeSlotMemory = "", activeUserLogTab = "upcoming";
     let deferredPromptInstance = null;
 
-    // Execute instant routing behavior BEFORE the browser builds layout elements
-    function executeDirectViewRouting() {
-      if (secureUserSessionToken && sessionMemberProfile) {
-         // Force dashboard view structures immediately open
-         document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
-            document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
-            toggleInterfaceView('workspace');
-            initUserCalendarStrip();
-            startPollingLiveWorkspaceLogs();
-         });
-      } else {
-         document.addEventListener("DOMContentLoaded", () => {
-            toggleInterfaceView('login');
-         });
-      }
-    }
-    executeDirectViewRouting();
-
+    // Direct routing function that modifies the elements safely right as the window finishes parsing
     window.addEventListener('DOMContentLoaded', () => {
+        // Clear splash boot display card
         setTimeout(() => {
             const splash = document.getElementById('appFirstBootSplashScreen');
             if (splash) {
@@ -281,8 +264,44 @@
                 setTimeout(() => splash.remove(), 500);
             }
         }, 1000);
+        
         initiateSmartPwaBannerSystem();
+
+        // ⚡ BLOCKING EVALUATION CARD
+        if (secureUserSessionToken && sessionMemberProfile) {
+            document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
+            document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
+            
+            // Force the workspace card instantly open
+            toggleInterfaceView('workspace');
+            initUserCalendarStrip();
+            startPollingLiveWorkspaceLogs();
+        } else {
+            toggleInterfaceView('login');
+        }
     });
+
+    function toggleInterfaceView(targetView) {
+        // Helper block that safely catches elements regardless of exact browser timings
+        const loginEl = document.getElementById('viewLoginPanel');
+        const regEl = document.getElementById('viewRegisterPanel');
+        const workEl = document.getElementById('viewWorkspacePanel');
+        const resetEl = document.getElementById('viewResetPanel');
+        const bannerEl = document.getElementById('pwaGlobalInstallBanner');
+
+        if(loginEl) loginEl.classList.add('hidden');
+        if(regEl) regEl.classList.add('hidden');
+        if(workEl) workEl.classList.add('hidden');
+        if(resetEl) resetEl.classList.add('hidden');
+
+        if(targetView === 'login' && loginEl) loginEl.classList.remove('hidden');
+        if(targetView === 'register' && regEl) regEl.classList.remove('hidden');
+        if(targetView === 'workspace' && workEl) {
+            workEl.classList.remove('hidden');
+            if(bannerEl) bannerEl.classList.add('hidden');
+        }
+        if(targetView === 'reset' && resetEl) resetEl.classList.remove('hidden');
+    }
 
     function initiateSmartPwaBannerSystem() {
         const banner = document.getElementById('pwaGlobalInstallBanner');
@@ -291,7 +310,7 @@
         const isIosDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
         const isStandaloneActive = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
-        if (isStandaloneActive) return;
+        if (isStandaloneActive || !banner) return;
 
         if (isIosDevice) {
             banner.classList.remove('hidden');
@@ -339,21 +358,6 @@
         } catch(e) { return new Date(); }
     }
 
-    function toggleInterfaceView(targetView) {
-        document.getElementById('viewLoginPanel').classList.add('hidden');
-        document.getElementById('viewRegisterPanel').classList.add('hidden');
-        document.getElementById('viewWorkspacePanel').classList.add('hidden');
-        document.getElementById('viewResetPanel').classList.add('hidden');
-
-        if(targetView === 'login') document.getElementById('viewLoginPanel').classList.remove('hidden');
-        if(targetView === 'register') document.getElementById('viewRegisterPanel').classList.remove('hidden');
-        if(targetView === 'workspace') {
-            document.getElementById('viewWorkspacePanel').classList.remove('hidden');
-            document.getElementById('pwaGlobalInstallBanner').classList.add('hidden');
-        }
-        if(targetView === 'reset') document.getElementById('viewResetPanel').classList.remove('hidden');
-    }
-
     function extractNormalizedAssetToken(name) {
         if(!name) return "";
         let str = name.toString().toLowerCase().trim();
@@ -362,7 +366,9 @@
         return prefix + (numbers.length > 0 ? numbers.charAt(0) : "1");
     }
 
-    document.getElementById('systemGlobalTicker').innerText = "Welcome to the Pickle at Chirag Portal! Use your secure password to manage your active booking.";
+    if(document.getElementById('systemGlobalTicker')) {
+       document.getElementById('systemGlobalTicker').innerText = "Welcome to the Pickle at Chirag Portal! Use your secure password to manage your active booking.";
+    }
 
     function executeSecurePasswordResetOverride() {
         const email = document.getElementById('resetEmailField').value.trim();
@@ -664,7 +670,9 @@
             sessionMemberProfile = null; secureUserSessionToken = ""; selectedTentativeSlotMemory = "";
             document.getElementById('loginEmailField').value = ""; document.getElementById('loginPasswordField').value = "";
             toggleInterfaceView('login');
-            document.getElementById('pwaGlobalInstallBanner').classList.remove('hidden');
+            
+            const bannerEl = document.getElementById('pwaGlobalInstallBanner');
+            if(bannerEl) bannerEl.classList.remove('hidden');
             initiateSmartPwaBannerSystem();
         }
     }
