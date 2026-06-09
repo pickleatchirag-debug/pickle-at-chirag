@@ -1,284 +1,214 @@
 const express = require('express');
-const fetch = require('node-fetch');
 const path = require('path');
-const crypto = require('crypto'); // Built-in node security tool for random tokens
+const cors = require('cors');
+
 const app = express();
-
-const GOOGLE_BRIDGE_URL = "https://script.google.com/macros/s/AKfycbyfJbTptFGBpBOHdeVjbmsichGaAmhvToils0KamJsHSwNUwaL37vFr31Hegtsz8RxuQw/exec";
-
-app.use(express.json());
-app.use(express.static(__dirname));
-
-// 🧠 ENCRYPTED MEMORY CORE & ACTIVE SESSIONS STORAGE
-let CACHED_MEMBERS = [];
-let CACHED_LOGS = [];
-let CACHED_ADMINS = [];
-let ACTIVE_SESSIONS = new Map(); // Store active, secure user tokens here
-
-let systemTickerState = { global: "Welcome to the Pickle at Chirag Portal! Manage your game reservations securely.", targeted: {} };
-
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
-
-// PWA Assets Delivery
-app.get('/icon-192.png', (req, res) => res.sendFile(path.join(__dirname, 'icon-192.png')));
-app.get('/icon-512.png', (req, res) => res.sendFile(path.join(__dirname, 'icon-512.png')));
-app.get('/manifest.json', (req, res) => res.sendFile(path.join(__dirname, 'manifest.json')));
-app.get('/service-worker.js', (req, res) => res.sendFile(path.join(__dirname, 'service-worker.js')));
-
-function getIndianStandardTime() {
-    return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-}
-
-function cleanSheetDate(dateInput) {
-    if (!dateInput) return "";
-    let str = dateInput.toString().trim();
-    if (str.includes('T') || str.includes('-')) {
-        let d = new Date(str);
-        if (!isNaN(d.getTime())) {
-            let localIST = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-            return `${String(localIST.getDate()).padStart(2, '0')}/${String(localIST.getMonth() + 1).padStart(2, '0')}/${localIST.getFullYear()}`;
-        }
-    }
-    return str;
-}
-
-function buildAbsoluteDateObject(dateStr, timeSlotStr) {
-    try {
-        const [d, m, y] = dateStr.split('/');
-        const [startHourStr] = timeSlotStr.split(' - ');
-        const [hour, minutes] = startHourStr.split(':');
-        return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
-    } catch(e) { return new Date(); }
-}
-
-function extractNormalizedAssetToken(name) {
-    if(!name) return "";
-    let str = name.toString().toLowerCase().trim();
-    let prefix = (str.includes("badminton") || str.includes("bd")) ? "bd" : "pb";
-    let numbers = str.replace(/[^0-9]/g, '');
-    return prefix + (numbers.length > 0 ? numbers.charAt(0) : "1");
-}
-
-// 🔄 SILENT BACKGROUND MULTI-TAB SYNCHRONIZATION ENGINE
-async function performGlobalDatabaseCacheSync() {
-    try {
-        const [memsRes, logsRes, adminRes] = await Promise.all([
-            fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Member_Directory`, { method: 'GET', redirect: 'follow' }),
-            fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=RealTime_bookings_log`, { method: 'GET', redirect: 'follow' }),
-            fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Admin_Directory`, { method: 'GET', redirect: 'follow' })
-        ]);
-
-        CACHED_MEMBERS = await memsRes.json();
-        const rawLogs = await logsRes.json();
-        CACHED_LOGS = rawLogs.map(r => { r.date = cleanSheetDate(r.date); return r; });
-        CACHED_ADMINS = await adminRes.json();
-        
-        console.log(`⚡ Encrypted Memory Core Synchronized.`);
-    } catch (e) {
-        console.log("⚠️ Caching engine maintaining existing data state due to brief network pause.");
-    }
-}
-
-performGlobalDatabaseCacheSync();
-setInterval(performGlobalDatabaseCacheSync, 10000); 
-
-async function sendToSheetBridge(payload) {
-    try {
-        const response = await fetch(GOOGLE_BRIDGE_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-        });
-        setTimeout(performGlobalDatabaseCacheSync, 1200);
-        return await response.json();
-    } catch (err) { return { status: "error", message: "Database connection timeout." }; }
-}
-
-function verifyAdminCredential(inputPassword) {
-    if (!inputPassword) return false;
-    return CACHED_ADMINS.some(a => a.password && a.password.toString().trim() === inputPassword.toString().trim());
-}
-
-// ================================================================= -->
-// 🔐 SECURE ADMINISTRATIVE ENCLAVE ENDPOINTS                        -->
-// ================================================================= -->
-app.post('/api/admin/verify-gate', async (req, res) => {
-    if (verifyAdminCredential(req.body.adminPass)) return res.json({ status: "success" });
-    res.status(401).json({ status: "error", message: "Invalid Administrative Password Key." });
-});
-
-app.post('/api/admin/directory', async (req, res) => {
-    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
-    res.json({ status: "success", members: CACHED_MEMBERS });
-});
-
-app.post('/api/admin/list-managers', async (req, res) => {
-    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
-    res.json({ status: "success", admins: CACHED_ADMINS });
-});
-
-app.post('/api/fetch-logs', async (req, res) => {
-    res.json({ status: "success", records: CACHED_LOGS }); // Loads layout matrices instantly!
-});
-
-// ================================================================= -->
-// ⚡ HIGH-SPEED HYBRID SESSION AUTHENTICATION                       -->
-// ================================================================= -->
-app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
-    
-    const user = CACHED_MEMBERS.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
-    if (!user) return res.json({ status: "error", message: "Email not whitelisted by club admin." });
-    
-    const reg = user.is_registered && (user.is_registered.toString().toUpperCase() === "TRUE" || user.is_registered === true);
-    if (!reg || !user.password) return res.json({ status: "error", message: "Account setup incomplete." });
-    if (user.password.toString().trim() !== password.toString().trim()) return res.json({ status: "error", message: "Invalid user password key." });
-    if (user.is_access_enabled.toString().toUpperCase() !== "ENABLED") return res.json({ status: "error", message: "Account currently suspended." });
-    
-    // 🔑 SECURITY GENERATOR: Create a random, un-guessable temporary token
-    const sessionToken = crypto.randomBytes(24).toString('hex');
-    ACTIVE_SESSIONS.set(sessionToken, {
-        userEmail: user.google_email,
-        fullName: user.full_name,
-        createdAt: Date.now()
-    });
-
-    const nowIST = getIndianStandardTime();
-    const activeBookings = CACHED_LOGS.filter(b => b.booked_by === user.full_name).filter(b => {
-        let sanDate = cleanSheetDate(b.date);
-        return sanDate.includes('/') && buildAbsoluteDateObject(sanDate, b.time_slot) > nowIST;
-    });
-
-    let maxTokensAllowed = (user.custom_tokens !== undefined && user.custom_tokens !== "") ? parseInt(user.custom_tokens, 10) : 2;
-    let tokensRemaining = maxTokensAllowed - activeBookings.length;
-    if(tokensRemaining < 0) tokensRemaining = 0;
-
-    res.json({ 
-        status: "success", 
-        token: sessionToken, // Sent to frontend to verify future transactions securely
-        user: { full_name: user.full_name, google_email: user.google_email }, 
-        activeTokens: tokensRemaining, 
-        ticker: systemTickerState.targeted[user.id] || systemTickerState.global 
-    });
-});
-
-app.post('/api/register', async (req, res) => {
-    const { email, fullName, registrationCode, password } = req.body;
-    const userRow = CACHED_MEMBERS.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
-    if (!userRow) return res.json({ status: "error", message: "This email address is not whitelisted by management." });
-
-    await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "full_name", updateValue: fullName });
-    await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "joining_code", updateValue: registrationCode });
-    await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "password", updateValue: password });
-    let finalResult = await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "is_registered", updateValue: "TRUE" });
-    res.json(finalResult);
-});
-
-// ================================================================= -->
-// 🛠️ WRITE OPERATIONS LAYER WITH SESSION VALIDATION                -->
-// ================================================================= -->
-app.post('/api/secure-booking', async (req, res) => {
-    const { courtName, sportType, userName, date, timeSlot, adminPass, sessionToken } = req.body;
-    
-    // Admin Override Authorization Check
-    let isAdminAction = (adminPass !== undefined);
-    if (isAdminAction && !verifyAdminCredential(adminPass)) {
-        return res.status(403).json({ status: "error", message: "Security Denied: Invalid Admin Code." });
-    }
-    
-    // Standard User Session Authorization Validation
-    if (!isAdminAction) {
-        if (!sessionToken || !ACTIVE_SESSIONS.has(sessionToken)) {
-            return res.status(401).json({ status: "error", message: "Session expired. Please sign out and log back in." });
-        }
-        const sessionData = ACTIVE_SESSIONS.get(sessionToken);
-        if (sessionData.fullName !== userName) {
-            return res.status(403).json({ status: "error", message: "Identity mismatch detected." });
-        }
-    }
-
-    const targetToken = extractNormalizedAssetToken(courtName);
-    const globalConflict = CACHED_LOGS.some(b => {
-        return extractNormalizedAssetToken(b.court_name) === targetToken && cleanSheetDate(b.date) === date && b.time_slot.trim() === timeSlot.trim();
-    });
-    if (globalConflict) return res.json({ status: "error", message: "Slot already claimed by another member." });
-
-    if (!isAdminAction) {
-        const matchingUser = CACHED_MEMBERS.find(m => m.full_name === userName);
-        const activeBookingsCount = CACHED_LOGS.filter(b => b.booked_by.trim() === userName.trim()).filter(b => {
-            let sanDate = cleanSheetDate(b.date);
-            return sanDate.includes('/') && buildAbsoluteDateObject(sanDate, b.time_slot) > getIndianStandardTime();
-        }).length;
-
-        let tokenCap = (matchingUser && matchingUser.custom_tokens !== undefined && matchingUser.custom_tokens !== "") ? parseInt(matchingUser.custom_tokens, 10) : 2;
-        if (activeBookingsCount >= tokenCap) return res.json({ status: "error", message: `Booking Refused: Token cap exhausted (${activeBookingsCount}/${tokenCap} used).` });
-    }
-
-    res.json(await sendToSheetBridge({ tabName: "RealTime_bookings_log", data: ["BK_" + Math.floor(10000 + Math.random() * 90000), courtName, sportType, userName, "'" + date, timeSlot, getIndianStandardTime().toLocaleString()] }));
-});
-
-app.post('/api/release-booking', async (req, res) => {
-    const { bookingId, adminPass, sessionToken } = req.body;
-    
-    let isAdminAction = (adminPass !== undefined);
-    if (isAdminAction && !verifyAdminCredential(adminPass)) {
-        return res.status(403).json({ status: "error", message: "Security Denied: Invalid Admin Key." });
-    }
-
-    if (!isAdminAction) {
-        if (!sessionToken || !ACTIVE_SESSIONS.has(sessionToken)) {
-            return res.status(401).json({ status: "error", message: "Session authorization expired." });
-        }
-        const sessionData = ACTIVE_SESSIONS.get(sessionToken);
-        const targetLog = CACHED_LOGS.find(l => l.booking_id === bookingId);
-        if (targetLog && targetLog.booked_by !== sessionData.fullName) {
-            return res.status(403).json({ status: "error", message: "Permission Denied: You cannot drop another player's row." });
-        }
-    }
-
-    res.json(await sendToSheetBridge({ action: "deleteRow", tabName: "RealTime_bookings_log", keyColumn: "booking_id", keyValue: bookingId }));
-});
-
-// Management Route Security Blocks
-app.post('/api/admin/update-tokens', async (req, res) => {
-    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
-    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: req.body.email, updateColumn: "custom_tokens", updateValue: req.body.tokenCount }));
-});
-
-app.post('/api/admin/add-manager', async (req, res) => {
-    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
-    res.json(await sendToSheetBridge({ tabName: "Admin_Directory", data: ["ADMIN_" + Math.floor(10000 + Math.random() * 90000), req.body.newName, req.body.newEmail, "admin", req.body.newPass] }));
-});
-
-app.post('/api/admin/change-password', async (req, res) => {
-    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
-    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Admin_Directory", keyColumn: "google_email", keyValue: req.body.targetEmail, updateColumn: "password", updateValue: req.body.newPass }));
-});
-
-app.post('/api/admin/update-access', async (req, res) => {
-    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
-    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: req.body.email, updateColumn: "is_access_enabled", updateValue: req.body.targetStatus }));
-});
-
-app.post('/api/remove-whitelist', async (req, res) => {
-    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
-    res.json(await sendToSheetBridge({ action: "deleteRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: req.body.email }));
-});
-
-app.post('/api/admin/authorize-member', async (req, res) => {
-    res.json(await sendToSheetBridge({ tabName: "Member_Directory", data: ["USER_" + Math.floor(10000 + Math.random() * 90000), "Pending Signup", req.body.email.toLowerCase().trim(), "----", "01/01/2026", "01/01/2027", "ENABLED", "PAID", "", "FALSE", "2"] }));
-});
-
-// 🧹 SESSION SANITIZATION THREAD (Clears logged out or stale sessions every hour)
-setInterval(() => {
-    const maxAge = 6 * 60 * 60 * 1000; // 6-Hour Lifespan Cap
-    const now = Date.now();
-    for (let [token, data] of ACTIVE_SESSIONS.entries()) {
-        if (now - data.createdAt > maxAge) ACTIVE_SESSIONS.delete(token);
-    }
-}, 3600000);
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✓ Fast & Secure Gateway Engine running on port ${PORT}`));
+
+// Middleware Setup
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
+
+// 📄 IN-MEMORY DATABASE MOCK 
+// (Replace or link with your MongoDB / PostgreSQL pool logic as required)
+let WHITELISTED_CODES = {
+  'c2': { full_name: 'Gayatri Babbar', unit: 'C2', used: false },
+  'g12': { full_name: 'Gautam Babbar', unit: 'G12', used: false },
+  'd4': { full_name: 'Kaveri Gulati', unit: 'D4', used: false }
+};
+
+let REGISTERED_USERS = [
+  {
+    google_email: 'rahul.babbar@gmail.com',
+    full_name: 'Rahul Babbar',
+    password_key: 'password123', // Clean text fallback for security demo mapping
+    unit_code: 'A1',
+    tokens: 4
+  }
+];
+
+let BOOKING_RECORDS = [
+  {
+    booking_id: 'b_9921',
+    court_name: 'Pickleball Court 1',
+    sport_type: 'PICKLEBALL',
+    booked_by: 'Rahul Babbar',
+    date: getTodayFormattedIST(0),
+    time_slot: '18:00 - 19:00'
+  },
+  {
+    booking_id: 'b_9922',
+    court_name: 'Pickleball Court 2',
+    sport_type: 'PICKLEBALL',
+    booked_by: 'Kaveri Gulati',
+    date: getTodayFormattedIST(0),
+    time_slot: '19:00 - 20:00'
+  }
+];
+
+// Helper to grab clean active date tags matching Indian Standard Time (IST)
+function getTodayFormattedIST(daysAhead = 0) {
+  let d = new Date();
+  let utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+  let ist = new Date(utc + (3600000 * 5.5));
+  ist.setDate(ist.getDate() + daysAhead);
+  return `${String(ist.getDate()).padStart(2, '0')}/${String(ist.getMonth() + 1).padStart(2, '0')}/${ist.getFullYear()}`;
+}
+
+// -------------------------------------------------------------
+// 🛠️ ENDPOINTS API PATHWAYS
+// -------------------------------------------------------------
+
+// 1. Core Profile Identity Authentication Loop
+app.post('/api/login', (req, requireRes) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return requireRes.status(400).json({ status: 'error', message: 'Missing credentials.' });
+  }
+
+  const userMatch = REGISTERED_USERS.find(
+    u => u.google_email.toLowerCase() === email.toLowerCase() && u.password_key === password
+  );
+
+  if (!userMatch) {
+    return requireRes.status(401).json({ status: 'error', message: 'Invalid authorized email or personal security key.' });
+  }
+
+  // Generate a mock static layout session token for context validation
+  const sessionToken = `sess_${Buffer.from(email).toString('base64').substring(0, 12)}`;
+
+  requireRes.json({
+    status: 'success',
+    token: sessionToken,
+    activeTokens: userMatch.tokens,
+    ticker: `✨ Connected to Member Desk. Hello, ${userMatch.full_name}! Check open court tracks below.`,
+    user: {
+      google_email: userMatch.google_email,
+      full_name: userMatch.full_name,
+      unit_code: userMatch.unit_code
+    }
+  });
+});
+
+// 2. Core New Member Profile Registration
+app.post('/api/register', (req, requireRes) => {
+  const { email, fullName, registrationCode, password } = req.body;
+  
+  if (!email || !fullName || !registrationCode || !password) {
+    return requireRes.status(400).json({ status: 'error', message: 'All registration parameters are mandatory.' });
+  }
+
+  const codeToken = registrationCode.toLowerCase().trim();
+  if (!WHITELISTED_CODES[codeToken]) {
+    return requireRes.status(403).json({ status: 'error', message: 'The provided Joining/Unit Code is not whitelisted by the management desk.' });
+  }
+
+  const existingEmail = REGISTERED_USERS.find(u => u.google_email.toLowerCase() === email.toLowerCase());
+  if (existingEmail) {
+    return requireRes.status(400).json({ status: 'error', message: 'A profile context with this email already exists.' });
+  }
+
+  // Commit account credentials into system dataset pool
+  REGISTERED_USERS.push({
+    google_email: email.trim(),
+    full_name: fullName.trim(),
+    password_key: password,
+    unit_code: WHITELISTED_CODES[codeToken].unit,
+    tokens: 4
+  });
+
+  // Mark the invitation whitelisted token context code as verified
+  WHITELISTED_CODES[codeToken].used = true;
+
+  requireRes.json({ status: 'success', message: 'Account initialized successfully!' });
+});
+
+// 3. Explicit Secure Server Side Password Override Bypass
+app.post('/api/reset-password', (req, requireRes) => {
+  const { email, verificationCode, newPassword } = req.body;
+
+  if (!email || !verificationCode || !newPassword) {
+    return requireRes.status(400).json({ status: 'error', message: 'Incomplete override credential map parameters.' });
+  }
+
+  const codeToken = verificationCode.toLowerCase().trim();
+  const userIndex = REGISTERED_USERS.findIndex(
+    u => u.google_email.toLowerCase() === email.toLowerCase() && u.unit_code.toLowerCase() === codeToken
+  );
+
+  if (userIndex === -1) {
+    return requireRes.status(403).json({ status: 'error', message: 'Identity verification verification mismatch. Reset request rejected.' });
+  }
+
+  // Override structural array text index
+  REGISTERED_USERS[userIndex].password_key = newPassword;
+  requireRes.json({ status: 'success', result: 'success', message: 'Password database registry updated clean.' });
+});
+
+// 4. Live Log Feed Sync Pipeline
+app.post('/api/fetch-logs', (req, requireRes) => {
+  // Pipes out active logs straight to the real-time grid matrices
+  requireRes.json({ status: 'success', records: BOOKING_RECORDS });
+});
+
+// 5. Secure Core Court Booking Lock Management
+app.post('/api/secure-booking', (req, requireRes) => {
+  const { courtName, sportType, userName, date, timeSlot, sessionToken } = req.body;
+
+  if (!courtName || !date || !timeSlot || !sessionToken) {
+    return requireRes.status(400).json({ status: 'error', message: 'Missing core booking specifications.' });
+  }
+
+  // Cross-reference conflict cell state matches inside the reservation registry
+  const collisionConflict = BOOKING_RECORDS.find(
+    b => b.court_name.toLowerCase() === courtName.toLowerCase() && b.date === date && b.time_slot === timeSlot
+  );
+
+  if (collisionConflict) {
+    return requireRes.status(409).json({ status: 'error', message: 'Collision block! This cell schedule block was just claimed by another member.' });
+  }
+
+  const newBookingId = `b_${Math.floor(1000 + Math.random() * 9000)}`;
+  BOOKING_RECORDS.push({
+    booking_id: newBookingId,
+    court_name: courtName,
+    sport_type: sportType || 'PICKLEBALL',
+    booked_by: userName || 'Resident Player',
+    date: date,
+    time_slot: timeSlot
+  });
+
+  requireRes.json({ status: 'success', bookingId: newBookingId });
+});
+
+// 6. Manual Self-Service Reservation Cancellation Releases
+app.post('/api/release-booking', (req, requireRes) => {
+  const { bookingId, sessionToken } = req.body;
+
+  if (!bookingId || !sessionToken) {
+    return requireRes.status(400).json({ status: 'error', message: 'Target specification token parameters missing.' });
+  }
+
+  const index = BOOKING_RECORDS.findIndex(b => b.booking_id === bookingId);
+  if (index === -1) {
+    return requireRes.status(404).json({ status: 'error', message: 'Reservation log matching identity hash not found in data logs.' });
+  }
+
+  // Splice target row item container cell
+  BOOKING_RECORDS.splice(index, 1);
+  requireRes.json({ status: 'success', message: 'Token refunded, reservation frame discarded.' });
+});
+
+// Root Catch-All Route serving frontend client app context layout shell frame
+app.get('*', (req, requireRes) => {
+  requireRes.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Initialize active local listen engine hook
+app.listen(PORT, () => {
+  console.log(`====================================================`);
+  console.log(` 🚀 CHIRAG SPORTS PORTAL BACKEND LOGS DEPLOYED LIVE`);
+  console.log(` 🌐 Internal Node Engine Port Loop listening on: ${PORT}`);
+  console.log(`====================================================`);
+});

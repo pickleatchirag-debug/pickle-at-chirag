@@ -40,8 +40,7 @@
         navigator.serviceWorker.register("/service-worker.js?v=2.0.0")
           .then(reg => {
             console.log("✓ Mobile App Engine Active.");
-            // Automatically update in the background if a change is detected
-            reg.update(); 
+            reg.update(); // Automatically update in the background if a change is detected
           })
           .catch(err => console.log("× Service Engine Error: ", err));
       });
@@ -119,7 +118,7 @@
         </div>
         <div class="space-y-1">
           <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Your Full Name</label>
-          <input type="text" id="regNameField" placeholder="gayatri babbar" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-600">
+          <input type="text" id="regNameField" placeholder="Your Name" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-600">
         </div>
         <div class="space-y-1">
           <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Society Unit Code</label>
