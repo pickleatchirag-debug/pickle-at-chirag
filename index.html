@@ -80,7 +80,7 @@
     </div>
   </div>
 
-  <main class="p-4 max-w-xl mx-auto w-full flex-1 flex flex-col justify-center">
+  <main class="p-4 max-w-xl mx-auto w-full flex-1 p-4 max-w-xl mx-auto w-full flex-1 flex flex-col justify-center">
     
     <div id="viewLoginPanel" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
       <div class="text-center space-y-1">
@@ -253,6 +253,22 @@
             }
         }, 1000);
         initiateSmartPwaBannerSystem();
+
+        // 🔥 LIFECYCLE AUTO-LOGIN INITIALIZATION CHECKS
+        const savedToken = localStorage.getItem('chirag_session_token');
+        const savedProfile = localStorage.getItem('chirag_member_profile');
+
+        if (savedToken && savedProfile) {
+            secureUserSessionToken = savedToken;
+            sessionMemberProfile = JSON.parse(savedProfile);
+
+            document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
+            document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
+            
+            toggleInterfaceView('workspace');
+            initUserCalendarStrip();
+            startPollingLiveWorkspaceLogs();
+        }
     });
 
     function initiateSmartPwaBannerSystem() {
@@ -406,6 +422,11 @@
             
             secureUserSessionToken = res.token;
             sessionMemberProfile = res.user;
+
+            // 💾 COMMIT UNIQUE IDENTITY VAULT ARRAYS PERMANENTLY
+            localStorage.setItem('chirag_session_token', secureUserSessionToken);
+            localStorage.setItem('chirag_member_profile', JSON.stringify(sessionMemberProfile));
+
             document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
             document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
             document.getElementById('lblWorkspaceAvailableTokens').innerText = res.activeTokens;
@@ -625,6 +646,10 @@
 
     function executeLogoutSequence() {
         if(confirm("Confirm logging out of active workspace context?")) {
+            // 🚨 CLEANSE PERSISTENT VAULT DATA CACHES
+            localStorage.removeItem('chirag_session_token');
+            localStorage.removeItem('chirag_member_profile');
+
             sessionMemberProfile = null; secureUserSessionToken = ""; selectedTentativeSlotMemory = "";
             document.getElementById('loginEmailField').value = ""; document.getElementById('loginPasswordField').value = "";
             toggleInterfaceView('login');
