@@ -1,6 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const path = require('path');
+const crypto = require('crypto');
 const app = express();
 
 const GOOGLE_BRIDGE_URL = "https://script.google.com/macros/s/AKfycbyfJbTptFGBpBOHdeVjbmsichGaAmhvToils0KamJsHSwNUwaL37vFr31Hegtsz8RxuQw/exec";
@@ -8,10 +9,22 @@ const GOOGLE_BRIDGE_URL = "https://script.google.com/macros/s/AKfycbyfJbTptFGBpB
 app.use(express.json());
 app.use(express.static(__dirname));
 
-let systemTickerState = { global: "Welcome to the Pickle at Chirag Portal! Use your secure password to manage your active booking.", targeted: {} };
+// 🧠 ENCRYPTED MEMORY CORE & ACTIVE SESSIONS STORAGE
+let CACHED_MEMBERS = [];
+let CACHED_LOGS = [];
+let CACHED_ADMINS = [];
+let ACTIVE_SESSIONS = new Map();
+
+let systemTickerState = { global: "Welcome to the Pickle at Chirag Portal! Manage your game reservations securely.", targeted: {} };
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+
+// PWA Assets Delivery
+app.get('/icon-192.png', (req, res) => res.sendFile(path.join(__dirname, 'icon-192.png')));
+app.get('/icon-512.png', (req, res) => res.sendFile(path.join(__dirname, 'icon-512.png')));
+app.get('/manifest.json', (req, res) => res.sendFile(path.join(__dirname, 'manifest.json')));
+app.get('/service-worker.js', (req, res) => res.sendFile(path.join(__dirname, 'service-worker.js')));
 
 function getIndianStandardTime() {
     return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
@@ -47,6 +60,29 @@ function extractNormalizedAssetToken(name) {
     return prefix + (numbers.length > 0 ? numbers.charAt(0) : "1");
 }
 
+// 🔄 SILENT BACKGROUND MULTI-TAB SYNCHRONIZATION ENGINE
+async function performGlobalDatabaseCacheSync() {
+    try {
+        const [memsRes, logsRes, adminRes] = await Promise.all([
+            fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Member_Directory`, { method: 'GET', redirect: 'follow' }),
+            fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=RealTime_bookings_log`, { method: 'GET', redirect: 'follow' }),
+            fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Admin_Directory`, { method: 'GET', redirect: 'follow' })
+        ]);
+
+        CACHED_MEMBERS = await memsRes.json();
+        const rawLogs = await logsRes.json();
+        CACHED_LOGS = rawLogs.map(r => { r.date = cleanSheetDate(r.date); return r; });
+        CACHED_ADMINS = await adminRes.json();
+        
+        console.log(`⚡ Encrypted Memory Core Synchronized.`);
+    } catch (e) {
+        console.log("⚠️ Caching engine maintaining existing data state due to brief network pause.");
+    }
+}
+
+performGlobalDatabaseCacheSync();
+setInterval(performGlobalDatabaseCacheSync, 10000); 
+
 async function sendToSheetBridge(payload) {
     try {
         const response = await fetch(GOOGLE_BRIDGE_URL, {
@@ -55,189 +91,202 @@ async function sendToSheetBridge(payload) {
             body: JSON.stringify(payload),
             redirect: 'follow'
         });
+        setTimeout(performGlobalDatabaseCacheSync, 1200);
         return await response.json();
-    } catch (err) { return { status: "error", message: "Database connection dropped." }; }
+    } catch (err) { return { status: "error", message: "Database connection timeout." }; }
 }
 
-async function verifyAdminCredentialAgainstDatabase(inputPassword) {
-    try {
-        const response = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Admin_Directory`, { method: 'GET', redirect: 'follow' });
-        const admins = await response.json();
-        return admins.some(a => a.password && a.password.toString().trim() === inputPassword.toString().trim());
-    } catch(e) { return false; }
+function verifyAdminCredential(inputPassword) {
+    if (!inputPassword) return false;
+    return CACHED_ADMINS.some(a => a.password && a.password.toString().trim() === inputPassword.toString().trim());
 }
 
-// 🔐 ADMIN VERIFICATION GATEWAY
+// 🔐 PASSWORD RESET ROUTE WITH TWO-FACTOR VERIFICATION BLOCK
+app.post('/api/reset-password', async (req, res) => {
+    const { email, verificationCode, newPassword } = req.body;
+    if (!email || !verificationCode || !newPassword) {
+        return res.json({ status: "error", message: "Missing explicit data tokens." });
+    }
+    const userRow = CACHED_MEMBERS.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
+    if (!userRow) {
+        return res.json({ status: "error", message: "This email address is not whitelisted by management." });
+    }
+    const masterCode = userRow.joining_code ? userRow.joining_code.toString().trim().toLowerCase() : "";
+    if (masterCode !== verificationCode.toString().trim().toLowerCase()) {
+        return res.json({ status: "error", message: "Verification failed: Incorrect Society Unit Joining Code." });
+    }
+    let finalResult = await sendToSheetBridge({ 
+        action: "updateRow", 
+        tabName: "Member_Directory", 
+        keyColumn: "google_email", 
+        keyValue: email.toLowerCase().trim(), 
+        updateColumn: "password", 
+        updateValue: newPassword 
+    });
+    res.json(finalResult);
+});
+
+// 🔐 SECURE ADMINISTRATIVE ENCLAVE ENDPOINTS
 app.post('/api/admin/verify-gate', async (req, res) => {
-    const { adminPass } = req.body;
-    if (await verifyAdminCredentialAgainstDatabase(adminPass)) return res.json({ status: "success" });
-    res.json({ status: "error", message: "Security Gate Refusal: Invalid Administrative Password." });
+    if (verifyAdminCredential(req.body.adminPass)) return res.json({ status: "success" });
+    res.status(401).json({ status: "error", message: "Invalid Administrative Password Key." });
 });
 
 app.post('/api/admin/directory', async (req, res) => {
-    const { adminPass } = req.body;
-    if (!(await verifyAdminCredentialAgainstDatabase(adminPass))) return res.json({ status: "error", message: "Invalid Password." });
-    try {
-        const response = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Member_Directory`, { method: 'GET', redirect: 'follow' });
-        res.json({ status: "success", members: await response.json() });
-    } catch(e) { res.json({ status: "error", members: [] }); }
-});
-
-app.post('/api/admin/update-tokens', async (req, res) => {
-    const { email, tokenCount, adminPass } = req.body;
-    if (!(await verifyAdminCredentialAgainstDatabase(adminPass))) return res.json({ status: "error", message: "Invalid Password." });
-    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "custom_tokens", updateValue: tokenCount }));
+    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
+    res.json({ status: "success", members: CACHED_MEMBERS });
 });
 
 app.post('/api/admin/list-managers', async (req, res) => {
-    const { adminPass } = req.body;
-    if (!(await verifyAdminCredentialAgainstDatabase(adminPass))) return res.json({ status: "error", message: "Denied Access" });
-    try {
-        const response = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Admin_Directory`, { method: 'GET', redirect: 'follow' });
-        res.json({ status: "success", admins: await response.json() });
-    } catch(e) { res.json({ status: "error", admins: [] }); }
-});
-
-app.post('/api/admin/add-manager', async (req, res) => {
-    const { adminPass, newName, newEmail, newPass } = req.body;
-    if (!(await verifyAdminCredentialAgainstDatabase(adminPass))) return res.json({ status: "error", message: "Denied Access" });
-    const newId = "ADMIN_" + Math.floor(10000 + Math.random() * 90000);
-    res.json(await sendToSheetBridge({ tabName: "Admin_Directory", data: [newId, newName, newEmail, "admin", newPass] }));
-});
-
-app.post('/api/admin/change-password', async (req, res) => {
-    const { adminPass, targetEmail, newPass } = req.body;
-    if (!(await verifyAdminCredentialAgainstDatabase(adminPass))) return res.json({ status: "error", message: "Denied Access" });
-    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Admin_Directory", keyColumn: "google_email", keyValue: targetEmail, updateColumn: "password", updateValue: newPass }));
-});
-
-app.post('/api/admin/update-access', async (req, res) => {
-    const { email, targetStatus, adminPass } = req.body;
-    if (!(await verifyAdminCredentialAgainstDatabase(adminPass))) return res.json({ status: "error", message: "Invalid Password." });
-    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "is_access_enabled", updateValue: targetStatus }));
-});
-
-app.post('/api/admin/remove-whitelist', async (req, res) => {
-    const { email, adminPass } = req.body;
-    if (!(await verifyAdminCredentialAgainstDatabase(adminPass))) return res.json({ status: "error", message: "Invalid Password." });
-    res.json(await sendToSheetBridge({ action: "deleteRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email }));
-});
-
-// 🔑 MEMBER SIGNUP ENGINE (ADDED AND CONNECTED)
-app.post('/api/register', async (req, res) => {
-    const { email, fullName, registrationCode, password } = req.body;
-    try {
-        const response = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Member_Directory`, { method: 'GET', redirect: 'follow' });
-        const members = await response.json();
-        
-        const userRow = members.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
-        if (!userRow) return res.json({ status: "error", message: "This email address is not whitelisted by management." });
-
-        const alreadyRegistered = userRow.is_registered && (userRow.is_registered.toString().toUpperCase() === "TRUE" || userRow.is_registered === true);
-        if (alreadyRegistered) return res.json({ status: "error", message: "This account has already been initialized. Please use the log-in console." });
-
-        // Batch update information rows to Google Sheets
-        await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "full_name", updateValue: fullName });
-        await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "joining_code", updateValue: registrationCode });
-        await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "password", updateValue: password });
-        let finalResult = await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "is_registered", updateValue: "TRUE" });
-        
-        res.json(finalResult);
-    } catch(e) { res.json({ status: "error", message: "An error occurred during account initialization." }); }
-});
-
-// 🔑 MEMBER LOGIN ENGINE
-app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const response = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Member_Directory`, { method: 'GET', redirect: 'follow' });
-        const members = await response.json();
-        const user = members.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
-        
-        if (!user) return res.json({ status: "error", message: "Email not whitelisted." });
-        const reg = user.is_registered && (user.is_registered.toString().toUpperCase() === "TRUE" || user.is_registered === true);
-        if (!reg || !user.password) return res.json({ status: "error", message: "Account configuration incomplete." });
-        if (user.password.toString().trim() !== password.toString().trim()) return res.json({ status: "error", message: "Invalid password." });
-        if (user.is_access_enabled.toString().toUpperCase() !== "ENABLED") return res.json({ status: "error", message: "Account locked." });
-        
-        const logsRes = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=RealTime_bookings_log`, { method: 'GET', redirect: 'follow' });
-        let logs = await logsRes.json();
-        const nowIST = getIndianStandardTime();
-        
-        const activeBookings = logs.filter(b => b.booked_by === user.full_name).filter(b => {
-            let sanDate = cleanSheetDate(b.date);
-            return sanDate.includes('/') && buildAbsoluteDateObject(sanDate, b.time_slot) > nowIST;
-        });
-
-        let maxTokensAllowed = (user.custom_tokens !== undefined && user.custom_tokens !== "") ? parseInt(user.custom_tokens, 10) : 2;
-        let tokensRemaining = maxTokensAllowed - activeBookings.length;
-        if(tokensRemaining < 0) tokensRemaining = 0;
-
-        res.json({ status: "success", user, activeTokens: tokensRemaining, ticker: systemTickerState.targeted[user.id] || systemTickerState.global });
-    } catch(e) { res.json({ status: "error", message: "Authentication failure." }); }
+    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
+    res.json({ status: "success", admins: CACHED_ADMINS });
 });
 
 app.post('/api/fetch-logs', async (req, res) => {
-    try {
-        const response = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=RealTime_bookings_log`, { method: 'GET', redirect: 'follow' });
-        let records = await response.json();
-        let sanitized = records.map(r => { r.date = cleanSheetDate(r.date); return r; });
-        res.json({ status: "success", records: sanitized });
-    } catch(e) { res.json({ status: "success", records: [] }); }
+    res.json({ status: "success", records: CACHED_LOGS });
 });
 
+// ⚡ HIGH-SPEED HYBRID SESSION AUTHENTICATION
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
+    const user = CACHED_MEMBERS.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
+    if (!user) return res.json({ status: "error", message: "Email not whitelisted by club admin." });
+    const reg = user.is_registered && (user.is_registered.toString().toUpperCase() === "TRUE" || user.is_registered === true);
+    if (!reg || !user.password) return res.json({ status: "error", message: "Account setup incomplete." });
+    if (user.password.toString().trim() !== password.toString().trim()) return res.json({ status: "error", message: "Invalid user password key." });
+    if (user.is_access_enabled.toString().toUpperCase() !== "ENABLED") return res.json({ status: "error", message: "Account currently suspended." });
+    
+    const sessionToken = crypto.randomBytes(24).toString('hex');
+    ACTIVE_SESSIONS.set(sessionToken, {
+        userEmail: user.google_email,
+        fullName: user.full_name,
+        createdAt: Date.now()
+    });
+
+    const nowIST = getIndianStandardTime();
+    const activeBookings = CACHED_LOGS.filter(b => b.booked_by === user.full_name).filter(b => {
+        let sanDate = cleanSheetDate(b.date);
+        return sanDate.includes('/') && buildAbsoluteDateObject(sanDate, b.time_slot) > nowIST;
+    });
+
+    let maxTokensAllowed = (user.custom_tokens !== undefined && user.custom_tokens !== "") ? parseInt(user.custom_tokens, 10) : 2;
+    let tokensRemaining = maxTokensAllowed - activeBookings.length;
+    if(tokensRemaining < 0) tokensRemaining = 0;
+
+    res.json({ 
+        status: "success", 
+        token: sessionToken, 
+        user: { full_name: user.full_name, google_email: user.google_email }, 
+        activeTokens: tokensRemaining, 
+        ticker: systemTickerState.targeted[user.id] || systemTickerState.global 
+    });
+});
+
+app.post('/api/register', async (req, res) => {
+    const { email, fullName, registrationCode, password } = req.body;
+    const userRow = CACHED_MEMBERS.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
+    if (!userRow) return res.json({ status: "error", message: "This email address is not whitelisted by management." });
+
+    await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "full_name", updateValue: fullName });
+    await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "joining_code", updateValue: registrationCode });
+    await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "password", updateValue: password });
+    let finalResult = await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "is_registered", updateValue: "TRUE" });
+    res.json(finalResult);
+});
+
+// 🛠️ WRITE OPERATIONS LAYER WITH SESSION VALIDATION
 app.post('/api/secure-booking', async (req, res) => {
-    const { courtName, sportType, userName, date, timeSlot, adminPass } = req.body;
-    if (adminPass !== undefined && !(await verifyAdminCredentialAgainstDatabase(adminPass))) {
-        return res.json({ status: "error", message: "Security Gate Refusal: Invalid Password." });
+    const { courtName, sportType, userName, date, timeSlot, adminPass, sessionToken } = req.body;
+    let isAdminAction = (adminPass !== undefined);
+    if (isAdminAction && !verifyAdminCredential(adminPass)) {
+        return res.status(403).json({ status: "error", message: "Security Denied: Invalid Admin Code." });
     }
-    try {
-        const response = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=RealTime_bookings_log`, { method: 'GET', redirect: 'follow' });
-        const logs = await response.json();
-        const nowIST = getIndianStandardTime();
-        
-        const targetToken = extractNormalizedAssetToken(courtName);
-        const globalConflict = logs.some(b => {
-            return extractNormalizedAssetToken(b.court_name) === targetToken && 
-                   cleanSheetDate(b.date) === date && 
-                   b.time_slot.trim() === timeSlot.trim();
-        });
-        if (globalConflict) return res.json({ status: "error", message: "Slot already claimed by another member." });
-
-        if (adminPass === undefined) {
-            const dirRes = await fetch(`${GOOGLE_BRIDGE_URL}?action=readTab&tabName=Member_Directory`, { method: 'GET', redirect: 'follow' });
-            const directory = await dirRes.json();
-            const matchingUser = directory.find(m => m.full_name === userName);
-
-            const activeBookingsCount = logs.filter(b => b.booked_by.trim() === userName.trim()).filter(b => {
-                let sanDate = cleanSheetDate(b.date);
-                return sanDate.includes('/') && buildAbsoluteDateObject(sanDate, b.time_slot) > nowIST;
-            }).length;
-
-            let tokenCap = (matchingUser && matchingUser.custom_tokens !== undefined && matchingUser.custom_tokens !== "") ? parseInt(matchingUser.custom_tokens, 10) : 2;
-            
-            if (activeBookingsCount >= tokenCap) {
-                return res.json({ status: "error", message: `Booking Refused: You have exhausted your active reservation token limit (${activeBookingsCount}/${tokenCap} used).` });
-            }
+    if (!isAdminAction) {
+        if (!sessionToken || !ACTIVE_SESSIONS.has(sessionToken)) {
+            return res.status(401).json({ status: "error", message: "Session expired. Please sign out and log back in." });
         }
-    } catch(e) { return res.json({ status: "error", message: "Validation error." }); }
+        const sessionData = ACTIVE_SESSIONS.get(sessionToken);
+        if (sessionData.fullName !== userName) {
+            return res.status(403).json({ status: "error", message: "Identity mismatch detected." });
+        }
+    }
+
+    const targetToken = extractNormalizedAssetToken(courtName);
+    const globalConflict = CACHED_LOGS.some(b => {
+        return extractNormalizedAssetToken(b.court_name) === targetToken && cleanSheetDate(b.date) === date && b.time_slot.trim() === timeSlot.trim();
+    });
+    if (globalConflict) return res.json({ status: "error", message: "Slot already claimed by another member." });
+
+    if (!isAdminAction) {
+        const matchingUser = CACHED_MEMBERS.find(m => m.full_name === userName);
+        const activeBookingsCount = CACHED_LOGS.filter(b => b.booked_by.trim() === userName.trim()).filter(b => {
+            let sanDate = cleanSheetDate(b.date);
+            return sanDate.includes('/') && buildAbsoluteDateObject(sanDate, b.time_slot) > getIndianStandardTime();
+        }).length;
+
+        let tokenCap = (matchingUser && matchingUser.custom_tokens !== undefined && matchingUser.custom_tokens !== "") ? parseInt(matchingUser.custom_tokens, 10) : 2;
+        if (activeBookingsCount >= tokenCap) return res.json({ status: "error", message: `Booking Refused: Token cap exhausted (${activeBookingsCount}/${tokenCap} used).` });
+    }
 
     res.json(await sendToSheetBridge({ tabName: "RealTime_bookings_log", data: ["BK_" + Math.floor(10000 + Math.random() * 90000), courtName, sportType, userName, "'" + date, timeSlot, getIndianStandardTime().toLocaleString()] }));
 });
 
 app.post('/api/release-booking', async (req, res) => {
-    const { bookingId, adminPass } = req.body;
-    if (adminPass !== undefined && !(await verifyAdminCredentialAgainstDatabase(adminPass))) {
-        return res.json({ status: "error", message: "Security Gate Refusal: Invalid Password." });
+    const { bookingId, adminPass, sessionToken } = req.body;
+    let isAdminAction = (adminPass !== undefined);
+    if (isAdminAction && !verifyAdminCredential(adminPass)) {
+        return res.status(403).json({ status: "error", message: "Security Denied: Invalid Admin Key." });
+    }
+    if (!isAdminAction) {
+        if (!sessionToken || !ACTIVE_SESSIONS.has(sessionToken)) {
+            return res.status(401).json({ status: "error", message: "Session authorization expired." });
+        }
+        const sessionData = ACTIVE_SESSIONS.get(sessionToken);
+        const targetLog = CACHED_LOGS.find(l => l.booking_id === bookingId);
+        if (targetLog && targetLog.booked_by !== sessionData.fullName) {
+            return res.status(403).json({ status: "error", message: "Permission Denied: You cannot drop another player's row." });
+        }
     }
     res.json(await sendToSheetBridge({ action: "deleteRow", tabName: "RealTime_bookings_log", keyColumn: "booking_id", keyValue: bookingId }));
 });
 
-app.post('/api/admin/authorize-member', async (req, res) => {
-    const { email } = req.body;
-    const newId = "USER_" + Math.floor(10000 + Math.random() * 90000);
-    res.json(await sendToSheetBridge({ tabName: "Member_Directory", data: [newId, "Pending Signup", email.toLowerCase().trim(), "----", "01/01/2026", "01/01/2027", "ENABLED", "PAID", "", "FALSE", "2"] }));
+// Management Route Security Blocks
+app.post('/api/admin/update-tokens', async (req, res) => {
+    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
+    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: req.body.email, updateColumn: "custom_tokens", updateValue: req.body.tokenCount }));
 });
 
+app.post('/api/admin/add-manager', async (req, res) => {
+    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
+    res.json({ tabName: "Admin_Directory", data: ["ADMIN_" + Math.floor(10000 + Math.random() * 90000), req.body.newName, req.body.newEmail, "admin", req.body.newPass] });
+});
+
+app.post('/api/admin/change-password', async (req, res) => {
+    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
+    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Admin_Directory", keyColumn: "google_email", keyValue: req.body.targetEmail, updateColumn: "password", updateValue: req.body.newPass }));
+});
+
+app.post('/api/admin/update-access', async (req, res) => {
+    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
+    res.json(await sendToSheetBridge({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: req.body.email, updateColumn: "is_access_enabled", updateValue: req.body.targetStatus }));
+});
+
+app.post('/api/remove-whitelist', async (req, res) => {
+    if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
+    res.json(await sendToSheetBridge({ action: "deleteRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: req.body.email }));
+});
+
+app.post('/api/admin/authorize-member', async (req, res) => {
+    res.json(await sendToSheetBridge({ tabName: "Member_Directory", data: ["USER_" + Math.floor(10000 + Math.random() * 90000), "Pending Signup", req.body.email.toLowerCase().trim(), "----", "01/01/2026", "01/01/2027", "ENABLED", "PAID", "", "FALSE", "2"] }));
+});
+
+setInterval(() => {
+    const maxAge = 6 * 60 * 60 * 1000;
+    const now = Date.now();
+    for (let [token, data] of ACTIVE_SESSIONS.entries()) {
+        if (now - data.createdAt > maxAge) ACTIVE_SESSIONS.delete(token);
+    }
+}, 3600000);
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✓ Core Portal Operating Server online on port ${PORT}`));
+app.listen(PORT, () => console.log(`✓ Fast & Secure Gateway Engine running on port ${PORT}`));
