@@ -1,7 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const path = require('path');
-const crypto = require('crypto');
+const crypto = require('crypto'); // Built-in node security tool for random tokens
 const app = express();
 
 const GOOGLE_BRIDGE_URL = "https://script.google.com/macros/s/AKfycbyfJbTptFGBpBOHdeVjbmsichGaAmhvToils0KamJsHSwNUwaL37vFr31Hegtsz8RxuQw/exec";
@@ -13,7 +13,7 @@ app.use(express.static(__dirname));
 let CACHED_MEMBERS = [];
 let CACHED_LOGS = [];
 let CACHED_ADMINS = [];
-let ACTIVE_SESSIONS = new Map();
+let ACTIVE_SESSIONS = new Map(); // Store active, secure user tokens here
 
 let systemTickerState = { global: "Welcome to the Pickle at Chirag Portal! Manage your game reservations securely.", targeted: {} };
 
@@ -101,32 +101,9 @@ function verifyAdminCredential(inputPassword) {
     return CACHED_ADMINS.some(a => a.password && a.password.toString().trim() === inputPassword.toString().trim());
 }
 
-// 🔐 PASSWORD RESET ROUTE WITH TWO-FACTOR VERIFICATION BLOCK
-app.post('/api/reset-password', async (req, res) => {
-    const { email, verificationCode, newPassword } = req.body;
-    if (!email || !verificationCode || !newPassword) {
-        return res.json({ status: "error", message: "Missing explicit data tokens." });
-    }
-    const userRow = CACHED_MEMBERS.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
-    if (!userRow) {
-        return res.json({ status: "error", message: "This email address is not whitelisted by management." });
-    }
-    const masterCode = userRow.joining_code ? userRow.joining_code.toString().trim().toLowerCase() : "";
-    if (masterCode !== verificationCode.toString().trim().toLowerCase()) {
-        return res.json({ status: "error", message: "Verification failed: Incorrect Society Unit Joining Code." });
-    }
-    let finalResult = await sendToSheetBridge({ 
-        action: "updateRow", 
-        tabName: "Member_Directory", 
-        keyColumn: "google_email", 
-        keyValue: email.toLowerCase().trim(), 
-        updateColumn: "password", 
-        updateValue: newPassword 
-    });
-    res.json(finalResult);
-});
-
-// 🔐 SECURE ADMINISTRATIVE ENCLAVE ENDPOINTS
+// ================================================================= -->
+// 🔐 SECURE ADMINISTRATIVE ENCLAVE ENDPOINTS                        -->
+// ================================================================= -->
 app.post('/api/admin/verify-gate', async (req, res) => {
     if (verifyAdminCredential(req.body.adminPass)) return res.json({ status: "success" });
     res.status(401).json({ status: "error", message: "Invalid Administrative Password Key." });
@@ -143,19 +120,24 @@ app.post('/api/admin/list-managers', async (req, res) => {
 });
 
 app.post('/api/fetch-logs', async (req, res) => {
-    res.json({ status: "success", records: CACHED_LOGS });
+    res.json({ status: "success", records: CACHED_LOGS }); // Loads layout matrices instantly!
 });
 
-// ⚡ HIGH-SPEED HYBRID SESSION AUTHENTICATION
+// ================================================================= -->
+// ⚡ HIGH-SPEED HYBRID SESSION AUTHENTICATION                       -->
+// ================================================================= -->
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
+    
     const user = CACHED_MEMBERS.find(m => m.google_email.toLowerCase().trim() === email.toLowerCase().trim());
     if (!user) return res.json({ status: "error", message: "Email not whitelisted by club admin." });
+    
     const reg = user.is_registered && (user.is_registered.toString().toUpperCase() === "TRUE" || user.is_registered === true);
     if (!reg || !user.password) return res.json({ status: "error", message: "Account setup incomplete." });
     if (user.password.toString().trim() !== password.toString().trim()) return res.json({ status: "error", message: "Invalid user password key." });
     if (user.is_access_enabled.toString().toUpperCase() !== "ENABLED") return res.json({ status: "error", message: "Account currently suspended." });
     
+    // 🔑 SECURITY GENERATOR: Create a random, un-guessable temporary token
     const sessionToken = crypto.randomBytes(24).toString('hex');
     ACTIVE_SESSIONS.set(sessionToken, {
         userEmail: user.google_email,
@@ -175,7 +157,7 @@ app.post('/api/login', async (req, res) => {
 
     res.json({ 
         status: "success", 
-        token: sessionToken, 
+        token: sessionToken, // Sent to frontend to verify future transactions securely
         user: { full_name: user.full_name, google_email: user.google_email }, 
         activeTokens: tokensRemaining, 
         ticker: systemTickerState.targeted[user.id] || systemTickerState.global 
@@ -194,13 +176,19 @@ app.post('/api/register', async (req, res) => {
     res.json(finalResult);
 });
 
-// 🛠️ WRITE OPERATIONS LAYER WITH SESSION VALIDATION
+// ================================================================= -->
+// 🛠️ WRITE OPERATIONS LAYER WITH SESSION VALIDATION                -->
+// ================================================================= -->
 app.post('/api/secure-booking', async (req, res) => {
     const { courtName, sportType, userName, date, timeSlot, adminPass, sessionToken } = req.body;
+    
+    // Admin Override Authorization Check
     let isAdminAction = (adminPass !== undefined);
     if (isAdminAction && !verifyAdminCredential(adminPass)) {
         return res.status(403).json({ status: "error", message: "Security Denied: Invalid Admin Code." });
     }
+    
+    // Standard User Session Authorization Validation
     if (!isAdminAction) {
         if (!sessionToken || !ACTIVE_SESSIONS.has(sessionToken)) {
             return res.status(401).json({ status: "error", message: "Session expired. Please sign out and log back in." });
@@ -233,10 +221,12 @@ app.post('/api/secure-booking', async (req, res) => {
 
 app.post('/api/release-booking', async (req, res) => {
     const { bookingId, adminPass, sessionToken } = req.body;
+    
     let isAdminAction = (adminPass !== undefined);
     if (isAdminAction && !verifyAdminCredential(adminPass)) {
         return res.status(403).json({ status: "error", message: "Security Denied: Invalid Admin Key." });
     }
+
     if (!isAdminAction) {
         if (!sessionToken || !ACTIVE_SESSIONS.has(sessionToken)) {
             return res.status(401).json({ status: "error", message: "Session authorization expired." });
@@ -247,6 +237,7 @@ app.post('/api/release-booking', async (req, res) => {
             return res.status(403).json({ status: "error", message: "Permission Denied: You cannot drop another player's row." });
         }
     }
+
     res.json(await sendToSheetBridge({ action: "deleteRow", tabName: "RealTime_bookings_log", keyColumn: "booking_id", keyValue: bookingId }));
 });
 
@@ -258,7 +249,7 @@ app.post('/api/admin/update-tokens', async (req, res) => {
 
 app.post('/api/admin/add-manager', async (req, res) => {
     if (!verifyAdminCredential(req.body.adminPass)) return res.status(403).json({ status: "error" });
-    res.json({ tabName: "Admin_Directory", data: ["ADMIN_" + Math.floor(10000 + Math.random() * 90000), req.body.newName, req.body.newEmail, "admin", req.body.newPass] });
+    res.json(await sendToSheetBridge({ tabName: "Admin_Directory", data: ["ADMIN_" + Math.floor(10000 + Math.random() * 90000), req.body.newName, req.body.newEmail, "admin", req.body.newPass] }));
 });
 
 app.post('/api/admin/change-password', async (req, res) => {
@@ -280,8 +271,9 @@ app.post('/api/admin/authorize-member', async (req, res) => {
     res.json(await sendToSheetBridge({ tabName: "Member_Directory", data: ["USER_" + Math.floor(10000 + Math.random() * 90000), "Pending Signup", req.body.email.toLowerCase().trim(), "----", "01/01/2026", "01/01/2027", "ENABLED", "PAID", "", "FALSE", "2"] }));
 });
 
+// 🧹 SESSION SANITIZATION THREAD (Clears logged out or stale sessions every hour)
 setInterval(() => {
-    const maxAge = 6 * 60 * 60 * 1000;
+    const maxAge = 6 * 60 * 60 * 1000; // 6-Hour Lifespan Cap
     const now = Date.now();
     for (let [token, data] of ACTIVE_SESSIONS.entries()) {
         if (now - data.createdAt > maxAge) ACTIVE_SESSIONS.delete(token);

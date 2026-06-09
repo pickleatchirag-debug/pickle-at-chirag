@@ -9,31 +9,102 @@
   <meta name="theme-color" content="#020617">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link class="app-main-icon-src" rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   
   <style>
+    /* Custom thin scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #020617; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
 
-    /* Clean Static App Launcher Icon Boot Overlay */
+    /* ================================================================= */
+    /* MINI ANIMATION ENGINE FOR FIRST-BOOT SPLASH SCREEN                 */
+    /* ================================================================= */
     #appFirstBootSplashScreen {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: radial-gradient(circle at center, #083344 0%, #020617 80%);
+      background: radial-gradient(circle at center, #06b6d4 0%, #020617 70%);
       z-index: 99999;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.5s ease-out;
+      transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* Outer glowing halo circular wrapper */
+    .glowing-halo-ring {
+      width: 240px;
+      height: 240px;
+      border: 4px solid rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(6, 182, 212, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2);
+      animation: pulsateGlowRing 2s infinite ease-in-out;
+    }
+
+    /* Merging Animation Component A: The Paddle coming from the left corner */
+    .merging-paddle {
+      width: 110px;
+      height: 110px;
+      position: absolute;
+      transform: translate(-150px, 150px) rotate(-45deg); /* Starts far away out of frame */
+      opacity: 0;
+      animation: mergePaddleIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+      animation-delay: 0.2s;
+    }
+
+    /* Merging Animation Component B: The Ball dropping from the top right corner */
+    .merging-ball {
+      width: 50px;
+      height: 50px;
+      position: absolute;
+      transform: translate(120px, -120px) scale(0.5); /* Starts high up and tiny */
+      opacity: 0;
+      animation: mergeBallIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards;
+      animation-delay: 0.5s;
+    }
+
+    /* Brand typography sliding up text layout block */
+    .brand-title-wrap {
+      margin-top: 35px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideTextUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      animation-delay: 1.1s;
+    }
+
+    /* KEYFRAMES TRACKS FOR PARALLEL ANIMATIONS */
+    @keyframes pulsateGlowRing {
+      0%, 100% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.5); transform: scale(1); }
+      50% { box-shadow: 0 0 50px rgba(6, 182, 212, 0.85); transform: scale(1.02); }
+    }
+
+    @keyframes mergePaddleIn {
+      0% { transform: translate(-150px, 150px) rotate(-90deg); opacity: 0; }
+      100% { transform: translate(-20px, 15px) rotate(0deg); opacity: 1; }
+    }
+
+    @keyframes mergeBallIn {
+      0% { transform: translate(120px, -120px) scale(0.3); opacity: 0; }
+      40% { opacity: 1; }
+      100% { transform: translate(45px, -35px) scale(1); opacity: 1; }
+    }
+
+    @keyframes slideTextUp {
+      100% { opacity: 1; transform: translateY(0); }
     }
   </style>
 
   <script>
+    // Register the Progressive Web App background engine thread
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/service-worker.js")
@@ -46,13 +117,46 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans select-none flex flex-col justify-between pb-6">
 
   <div id="appFirstBootSplashScreen">
-    <div class="relative flex flex-col items-center">
-      <img src="/icon-512.png?v=2" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
-      <div class="mt-6 text-center">
-        <h1 class="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-400">Pickle At</h1>
-        <h2 class="text-3xl font-black tracking-tight text-white uppercase mt-0.5 filter drop-shadow-md">Chirag</h2>
-        <div class="w-8 h-0.5 bg-cyan-400 mx-auto mt-3 rounded-full opacity-60"></div>
-      </div>
+    <div class="glowing-halo-ring">
+      <svg class="absolute w-24 h-24 -translate-y-12 -translate-x-6 z-10" viewBox="0 0 100 100">
+        <text x="25" y="65" font-family="'Arial Black', sans-serif" font-size="36" font-weight="900" fill="#d9f99d" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.5))">CP</text>
+        <path d="M 22,50 C 15,40 18,32 25,36 C 22,28 32,25 35,34" stroke="#d9f99d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      
+      <svg class="merging-paddle" viewBox="0 0 200 200">
+        <defs>
+          <radialGradient id="paddleGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#f59e0b" />
+            <stop offset="100%" stop-color="#b45309" />
+          </radialGradient>
+        </defs>
+        <rect x="52" y="132" width="22" height="55" rx="6" fill="#0f172a" stroke="#1e293b" stroke-width="4" transform="rotate(-45 63 160)" />
+        <rect x="54" y="137" width="18" height="40" fill="#1e293b" transform="rotate(-45 63 160)" />
+        <ellipse cx="115" cy="85" rx="55" ry="62" fill="#0f172a" stroke="#1e293b" stroke-width="6" transform="rotate(-15 115 85)" />
+        <ellipse cx="115" cy="85" rx="46" ry="53" fill="url(#paddleGrad)" transform="rotate(-15 115 85)" />
+        <path d="M 78,110 Q 115,70 152,104" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" />
+      </svg>
+
+      <svg class="merging-ball" viewBox="0 0 100 100">
+        <defs>
+          <radialGradient id="ballGrad" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#a3e635" />
+            <stop offset="70%" stop-color="#65a30d" />
+            <stop offset="100%" stop-color="#3f6212" />
+          </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="44" fill="url(#ballGrad)" stroke="#1e293b" stroke-width="3" filter="drop-shadow(0px 4px 10px rgba(0,0,0,0.7))" />
+        <circle cx="50" cy="50" r="6" fill="#1a2e05" />
+        <circle cx="30" cy="38" r="4.5" fill="#1a2e05" /><circle cx="70" cy="38" r="4.5" fill="#1a2e05" />
+        <circle cx="30" cy="62" r="4.5" fill="#1a2e05" /><circle cx="70" cy="62" r="4.5" fill="#1a2e05" />
+        <circle cx="50" cy="22" r="4.5" fill="#1a2e05" /><circle cx="50" cy="78" r="4.5" fill="#1a2e05" />
+      </svg>
+    </div>
+
+    <div class="brand-title-wrap">
+      <h1 class="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-300 drop-shadow">Pickle At</h1>
+      <h2 class="text-3xl font-black tracking-tight text-white uppercase mt-0.5 filter drop-shadow(0 4px 12px rgba(0,0,0,0.5))">Chirag</h2>
+      <div class="w-12 h-1 bg-gradient-to-r from-cyan-400 to-lime-400 mx-auto mt-3 rounded-full shadow-inner animate-pulse"></div>
     </div>
   </div>
 
@@ -63,19 +167,6 @@
     </div>
   </div>
 
-  <div id="pwaGlobalInstallBanner" class="hidden max-w-md w-full mx-auto px-4 mt-4 select-none">
-    <div class="bg-gradient-to-r from-cyan-950/40 to-slate-900 border border-cyan-500/30 rounded-2xl p-4 flex items-center justify-between shadow-xl">
-      <div class="flex items-center space-x-3">
-        <div class="text-xl bg-cyan-500/10 border border-cyan-500/20 p-2 rounded-xl text-center">📱</div>
-        <div>
-          <h4 class="text-xs font-black text-slate-100 uppercase tracking-wider">Install App Icon</h4>
-          <p id="pwaBannerInstructionText" class="text-[10px] text-slate-400 mt-0.5 font-medium">Add Pickle at Chirag right to your mobile workspace launcher screens.</p>
-        </div>
-      </div>
-      <button id="pwaActionTriggerBtn" class="bg-cyan-500 text-slate-950 text-[10px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest hover:brightness-110 shadow-lg active:scale-[0.97] transition-all cursor-pointer">Install</button>
-    </div>
-  </div>
-
   <main class="p-4 max-w-xl mx-auto w-full flex-1 flex flex-col justify-center">
     
     <div id="viewLoginPanel" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
@@ -83,6 +174,7 @@
         <h2 class="text-xs font-black tracking-widest uppercase text-red-500">Welcome Back</h2>
         <p class="text-xl font-black text-slate-100 tracking-tight">Log Into Resident Portal</p>
       </div>
+
       <div class="space-y-3 pt-2">
         <div class="space-y-1">
           <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Google Email Address</label>
@@ -92,21 +184,23 @@
           <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Personal Password Key</label>
           <input type="password" id="loginPasswordField" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-red-500 text-slate-100 placeholder-slate-700 tracking-widest">
         </div>
+
         <button onclick="executeMemberLoginHandshake()" class="w-full bg-gradient-to-r from-red-500 to-amber-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
           Sign Into Dashboard
         </button>
       </div>
-      <div class="flex justify-between items-center pt-3 border-t border-slate-800/60 text-xs">
-        <p class="text-slate-400">New player? <button onclick="toggleInterfaceView('register')" class="text-amber-400 font-bold hover:underline cursor-pointer">Register</button></p>
-        <button onclick="toggleInterfaceView('reset')" class="text-cyan-400 font-bold hover:underline cursor-pointer">Forgot Password?</button>
+
+      <div class="text-center pt-2 border-t border-slate-800/60">
+        <p class="text-xs text-slate-400">New player? <button onclick="toggleInterfaceView('register')" class="text-amber-400 font-bold hover:underline cursor-pointer">Create your password here</button></p>
       </div>
     </div>
 
     <div id="viewRegisterPanel" class="hidden bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
       <div class="text-center space-y-1">
         <h2 class="text-xs font-black tracking-widest uppercase text-amber-500">Create Member Password</h2>
-        <p class="text-xs text-slate-400">Initialize whitelisted profile credentials.</p>
+        <p class="text-xs text-slate-400">Initialize your whitelisted address credentials to clear account activation blockouts.</p>
       </div>
+
       <div class="space-y-3 pt-2">
         <div class="space-y-1">
           <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Whitelisted Email Address</label>
@@ -117,46 +211,21 @@
           <input type="text" id="regNameField" placeholder="gayatri babbar" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-600">
         </div>
         <div class="space-y-1">
-          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Society Unit Code</label>
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Society Registration Unit Code</label>
           <input type="text" id="regCodeField" placeholder="c2" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-600 font-mono">
         </div>
         <div class="space-y-1">
           <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Set Account Password</label>
           <input type="password" id="regPasswordField" placeholder="••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-700 tracking-widest">
         </div>
+
         <button onclick="executeMemberAccountRegistration()" class="w-full bg-amber-500 text-slate-950 font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
           Complete Registration
         </button>
       </div>
-      <div class="text-center pt-2 border-t border-slate-800/60">
-        <p class="text-xs text-slate-400">Back to security gate? <button onclick="toggleInterfaceView('login')" class="text-red-400 font-bold hover:underline cursor-pointer">Log in here</button></p>
-      </div>
-    </div>
 
-    <div id="viewResetPanel" class="hidden bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
-      <div class="text-center space-y-1">
-        <h2 class="text-xs font-black tracking-widest uppercase text-cyan-400">Secure Password Reset</h2>
-        <p class="text-xs text-slate-400">Verify whitelisted registration code details.</p>
-      </div>
-      <div class="space-y-3 pt-2">
-        <div class="space-y-1">
-          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Registered Email Address</label>
-          <input type="email" id="resetEmailField" placeholder="resident@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-400 text-slate-100 placeholder-slate-600 font-mono">
-        </div>
-        <div class="space-y-1">
-          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Society Joining/Unit Code Key</label>
-          <input type="text" id="resetCodeField" placeholder="Enter whitelisted registration code" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-400 text-slate-100 placeholder-slate-600 font-mono">
-        </div>
-        <div class="space-y-1">
-          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Generate New Password</label>
-          <input type="password" id="resetNewPasswordField" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-400 text-slate-100 placeholder-slate-700 tracking-widest">
-        </div>
-        <button onclick="executeSecurePasswordResetOverride()" class="w-full bg-cyan-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
-          Override & Save Password
-        </button>
-      </div>
       <div class="text-center pt-2 border-t border-slate-800/60">
-        <p class="text-xs text-slate-400">Remembered keys? <button onclick="toggleInterfaceView('login')" class="text-red-400 font-bold hover:underline cursor-pointer">Return to Login</button></p>
+        <p class="text-xs text-slate-400">Registered? <button onclick="toggleInterfaceView('login')" class="text-red-400 font-bold hover:underline cursor-pointer">Log in instead</button></p>
       </div>
     </div>
 
@@ -208,17 +277,6 @@
         <div id="userPersonalLedgerContainer" class="max-h-[240px] overflow-y-auto space-y-2.5 pr-1"></div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-lg space-y-4">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-          <div class="flex items-center space-x-2">
-             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-             <h2 class="text-xs font-black tracking-wider uppercase text-cyan-400">Live Club Schedule Matrix</h2>
-          </div>
-          <span class="text-[9px] bg-cyan-950 text-cyan-400 border border-cyan-900/60 px-2 py-0.5 rounded font-black uppercase tracking-wider">All Courts</span>
-        </div>
-        <div id="globalClubLogLedgerContainer" class="max-h-[260px] overflow-y-auto space-y-2.5 pr-1 text-slate-100"></div>
-      </div>
-
       <div class="text-center">
          <button onclick="executeLogoutSequence()" class="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-red-400 transition-all border border-slate-800/80 px-4 py-2 rounded-xl bg-slate-900/40">✕ Terminate Session Authorization</button>
       </div>
@@ -234,53 +292,21 @@
       "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", 
       "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00", 
       "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", 
-      "19:00 - 20:00", "20:00 - 21:00"
+      "19:00 - 20:00", "19:00 - 20:00", "20:00 - 21:00"
     ];
     let selectedUserAsset = "Pickleball Court 1", selectedUserDateStr = "", userActiveBookingsLogs = [], sessionMemberProfile = null;
     let selectedTentativeSlotMemory = "", activeUserLogTab = "upcoming", secureUserSessionToken = "";
-    let deferredPromptInstance = null;
 
+    // Automatically fade out the splash screen overlay after animations finish compiling (2.4 seconds)
     window.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             const splash = document.getElementById('appFirstBootSplashScreen');
             if (splash) {
                 splash.style.opacity = '0';
-                setTimeout(() => splash.remove(), 500);
+                setTimeout(() => splash.remove(), 600); // Completely clears it from system memory layout
             }
-        }, 1000);
-        initiateSmartPwaBannerSystem();
+        }, 2400);
     });
-
-    function initiateSmartPwaBannerSystem() {
-        const banner = document.getElementById('pwaGlobalInstallBanner');
-        const txt = document.getElementById('pwaBannerInstructionText');
-        const btn = document.getElementById('pwaActionTriggerBtn');
-        const isIosDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const isStandaloneActive = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-
-        if (isStandaloneActive) return;
-
-        if (isIosDevice) {
-            banner.classList.remove('hidden');
-            txt.innerText = "Tap Safari's 'Share' button at the bottom navigation panel, then tap 'Add to Home Screen'.";
-            btn.innerText = "Guide";
-            btn.onclick = () => alert("🍏 Apple Setup Guide:\n1. Click the share arrow at the bottom of Safari.\n2. Choose 'Add to Home Screen' from the card menu.");
-        } else {
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPromptInstance = e;
-                banner.classList.remove('hidden');
-            });
-            btn.onclick = () => {
-                if (!deferredPromptInstance) return;
-                deferredPromptInstance.prompt();
-                deferredPromptInstance.userChoice.then((choice) => {
-                    if (choice.outcome === 'accepted') banner.classList.add('hidden');
-                    deferredPromptInstance = null;
-                });
-            };
-        }
-    }
 
     function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
@@ -297,7 +323,6 @@
         return str;
     }
 
-    // 🏆 FIXED FUNCTION LAYER: Syntax typo completely cleaned from index stream
     function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
         try {
             const [d, m, y] = dateStr.split('/');
@@ -305,21 +330,6 @@
             const [hour, minutes] = startHourStr.split(':');
             return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
         } catch(e) { return new Date(); }
-    }
-
-    function toggleInterfaceView(targetView) {
-        document.getElementById('viewLoginPanel').classList.add('hidden');
-        document.getElementById('viewRegisterPanel').classList.add('hidden');
-        document.getElementById('viewWorkspacePanel').classList.add('hidden');
-        document.getElementById('viewResetPanel').classList.add('hidden');
-
-        if(targetView === 'login') document.getElementById('viewLoginPanel').classList.remove('hidden');
-        if(targetView === 'register') document.getElementById('viewRegisterPanel').classList.remove('hidden');
-        if(targetView === 'workspace') {
-            document.getElementById('viewWorkspacePanel').classList.remove('hidden');
-            document.getElementById('pwaGlobalInstallBanner').classList.add('hidden');
-        }
-        if(targetView === 'reset') document.getElementById('viewResetPanel').classList.remove('hidden');
     }
 
     function extractNormalizedAssetToken(name) {
@@ -330,36 +340,17 @@
         return prefix + (numbers.length > 0 ? numbers.charAt(0) : "1");
     }
 
-    document.getElementById('systemGlobalTicker').innerText = "Welcome to the Pickle at Chirag Portal! Use your secure password to manage your active booking.";
+    function toggleInterfaceView(targetView) {
+        document.getElementById('viewLoginPanel').classList.add('hidden');
+        document.getElementById('viewRegisterPanel').classList.add('hidden');
+        document.getElementById('viewWorkspacePanel').classList.add('hidden');
 
-    function executeSecurePasswordResetOverride() {
-        const email = document.getElementById('resetEmailField').value.trim();
-        const verificationCode = document.getElementById('resetCodeField').value.trim();
-        const newPassword = document.getElementById('resetNewPasswordField').value.trim();
-
-        if (!email || !verificationCode || !newPassword) {
-            return alert("Please map all fields cleanly before executing password resets.");
-        }
-
-        fetch('/api/reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, verificationCode, newPassword })
-        })
-        .then(r => r.json())
-        .then(res => {
-            if (res.status === "success" || res.result === "success") {
-                alert("✓ Password overridden successfully! Database synced clean.");
-                document.getElementById('resetEmailField').value = "";
-                document.getElementById('resetCodeField').value = "";
-                document.getElementById('resetNewPasswordField').value = "";
-                toggleInterfaceView('login');
-            } else {
-                alert(res.message || "Reset request denied by core gateway.");
-            }
-        })
-        .catch(() => alert("Database sync pause. Please retry link tracking."));
+        if(targetView === 'login') document.getElementById('viewLoginPanel').classList.remove('hidden');
+        if(targetView === 'register') document.getElementById('viewRegisterPanel').classList.remove('hidden');
+        if(targetView === 'workspace') document.getElementById('viewWorkspacePanel').classList.remove('hidden');
     }
+
+    document.getElementById('systemGlobalTicker').innerText = "Welcome to the Pickle at Chirag Portal! Use your secure password to manage your active booking.";
 
     function executeMemberAccountRegistration() {
         const email = document.getElementById('regEmailField').value.trim();
@@ -426,7 +417,6 @@
             userActiveBookingsLogs = res.records || [];
             renderUserMatrixGridUI();
             renderUserPersonalLedgerUI();
-            renderGlobalClubLogUI();
         });
     }
 
@@ -531,44 +521,6 @@
         });
     }
 
-    function renderGlobalClubLogUI() {
-        const container = document.getElementById('globalClubLogLedgerContainer'); if(!container) return;
-        container.innerHTML = "";
-        const nowIST = getNowLocalIST();
-
-        let activeGlobalMatches = userActiveBookingsLogs.map(b => {
-            return { ...b, absoluteMatchTime: parseUIDateToAbsoluteObject(sanitizeUIDate(b.date), b.time_slot) };
-        })
-        .filter(b => b.absoluteMatchTime > nowIST);
-
-        activeGlobalMatches.sort((a, b) => a.absoluteMatchTime - b.absoluteMatchTime);
-
-        if (activeGlobalMatches.length === 0) {
-            container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No scheduled club matches booked on any court for the upcoming days.</p>`;
-            return;
-        }
-
-        activeGlobalMatches.forEach(match => {
-            let isItemMine = match.booked_by === sessionMemberProfile.full_name;
-            let iconMarker = match.court_name.includes('Badminton') ? "🏸" : "🏓";
-            
-            container.innerHTML += `
-              <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border ${isItemMine ? 'border-red-500/40 bg-red-950/5' : 'border-slate-900'}">
-                <div class="flex items-center space-x-3">
-                  <div class="text-lg">${iconMarker}</div>
-                  <div>
-                    <h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-[10px] text-slate-500 font-mono font-medium ml-1">(${sanitizeUIDate(match.date)})</span></h4>
-                    <p class="text-[10px] text-slate-400 font-mono mt-0.5">${match.time_slot}</p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="text-[9px] uppercase tracking-wider text-slate-500 font-black block">Player</span>
-                  <span class="text-xs font-bold ${isItemMine ? 'text-red-400' : 'text-cyan-400'}">${match.booked_by}</span>
-                </div>
-              </div>`;
-        });
-    }
-
     function toggleUserLogTab(tabKey) {
         activeUserLogTab = tabKey;
         document.getElementById('tabUserLogUpcoming').className = tabKey === 'upcoming' ? 'text-emerald-400 underline decoration-2 underline-offset-4 font-black cursor-pointer' : 'text-slate-500 cursor-pointer';
@@ -625,8 +577,6 @@
             sessionMemberProfile = null; secureUserSessionToken = ""; selectedTentativeSlotMemory = "";
             document.getElementById('loginEmailField').value = ""; document.getElementById('loginPasswordField').value = "";
             toggleInterfaceView('login');
-            document.getElementById('pwaGlobalInstallBanner').classList.remove('hidden');
-            initiateSmartPwaBannerSystem();
         }
     }
   </script>
