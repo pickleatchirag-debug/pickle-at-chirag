@@ -242,21 +242,49 @@
       "19:00 - 20:00", "20:00 - 21:00"
     ];
 
-    // ⚡ INSTANT LOGIC EVALUATION (No Event Listeners allowed to delay this block)
-    let secureUserSessionToken = localStorage.getItem('chirag_session_token') || "";
+    let selectedUserAsset = "Pickleball Court 1";
+    let selectedUserDateStr = "";
+    let userActiveBookingsLogs = [];
     let sessionMemberProfile = null;
-    try {
-      const savedProfile = localStorage.getItem('chirag_member_profile');
-      if (savedProfile) sessionMemberProfile = JSON.parse(savedProfile);
-    } catch(e) { console.log(e); }
-
-    let selectedUserAsset = "Pickleball Court 1", selectedUserDateStr = "", userActiveBookingsLogs = [];
-    let selectedTentativeSlotMemory = "", activeUserLogTab = "upcoming";
+    let secureUserSessionToken = "";
+    let selectedTentativeSlotMemory = "";
+    let activeUserLogTab = "upcoming";
     let deferredPromptInstance = null;
 
-    // Direct routing function that modifies the elements safely right as the window finishes parsing
+    // ⚡ INSTANT DEEP DIAGNOSTIC SESSION CHECKER
+    function evaluateStorageSessionSync() {
+      const savedToken = localStorage.getItem('chirag_session_token');
+      const savedProfile = localStorage.getItem('chirag_member_profile');
+
+      if (savedToken && savedProfile) {
+        try {
+          secureUserSessionToken = savedToken;
+          sessionMemberProfile = JSON.parse(savedProfile);
+          
+          // Inject content instantly as soon as layout elements become interactive
+          window.addEventListener('DOMContentLoaded', () => {
+            const nameField = document.getElementById('lblWorkspaceMemberName');
+            const emailField = document.getElementById('lblWorkspaceMemberEmail');
+            if (nameField) nameField.innerText = sessionMemberProfile.full_name;
+            if (emailField) emailField.innerText = sessionMemberProfile.google_email;
+            
+            toggleInterfaceView('workspace');
+            initUserCalendarStrip();
+            startPollingLiveWorkspaceLogs();
+          });
+          return true;
+        } catch (e) {
+          localStorage.removeItem('chirag_session_token');
+          localStorage.removeItem('chirag_member_profile');
+        }
+      }
+      return false;
+    }
+
+    // Execute session checking phase immediately at top runtime level
+    const isUserAuthenticated = evaluateStorageSessionSync();
+
     window.addEventListener('DOMContentLoaded', () => {
-        // Clear splash boot display card
         setTimeout(() => {
             const splash = document.getElementById('appFirstBootSplashScreen');
             if (splash) {
@@ -267,40 +295,40 @@
         
         initiateSmartPwaBannerSystem();
 
-        // ⚡ BLOCKING EVALUATION CARD
-        if (secureUserSessionToken && sessionMemberProfile) {
-            document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
-            document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
-            
-            // Force the workspace card instantly open
-            toggleInterfaceView('workspace');
-            initUserCalendarStrip();
-            startPollingLiveWorkspaceLogs();
-        } else {
+        // Enforce basic fallback visibility rules if data registers missing
+        if (!isUserAuthenticated) {
             toggleInterfaceView('login');
         }
     });
 
     function toggleInterfaceView(targetView) {
-        // Helper block that safely catches elements regardless of exact browser timings
-        const loginEl = document.getElementById('viewLoginPanel');
-        const regEl = document.getElementById('viewRegisterPanel');
-        const workEl = document.getElementById('viewWorkspacePanel');
-        const resetEl = document.getElementById('viewResetPanel');
+        const panels = {
+            'login': document.getElementById('viewLoginPanel'),
+            'register': document.getElementById('viewRegisterPanel'),
+            'workspace': document.getElementById('viewWorkspacePanel'),
+            'reset': document.getElementById('viewResetPanel')
+        };
         const bannerEl = document.getElementById('pwaGlobalInstallBanner');
 
-        if(loginEl) loginEl.classList.add('hidden');
-        if(regEl) regEl.classList.add('hidden');
-        if(workEl) workEl.classList.add('hidden');
-        if(resetEl) resetEl.classList.add('hidden');
+        // Hide all views explicitly
+        Object.values(panels).forEach(panel => {
+            if (panel) {
+                panel.classList.add('hidden');
+                panel.style.display = 'none'; // Overrides Tailwind conflicts during browser parsing
+            }
+        });
 
-        if(targetView === 'login' && loginEl) loginEl.classList.remove('hidden');
-        if(targetView === 'register' && regEl) regEl.classList.remove('hidden');
-        if(targetView === 'workspace' && workEl) {
-            workEl.classList.remove('hidden');
-            if(bannerEl) bannerEl.classList.add('hidden');
+        // Open structural visibility track
+        const currentTarget = panels[targetView];
+        if (currentTarget) {
+            currentTarget.classList.remove('hidden');
+            currentTarget.style.display = targetView === 'workspace' ? 'block' : 'flex';
+            
+            if (targetView === 'workspace' && bannerEl) {
+                bannerEl.classList.add('hidden');
+                bannerEl.style.display = 'none';
+            }
         }
-        if(targetView === 'reset' && resetEl) resetEl.classList.remove('hidden');
     }
 
     function initiateSmartPwaBannerSystem() {
