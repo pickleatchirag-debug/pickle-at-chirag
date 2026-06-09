@@ -19,7 +19,7 @@
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
 
-    /* Static Boot Overlay Panel */
+    /* Clean Static App Launcher Icon Boot Overlay */
     #appFirstBootSplashScreen {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -47,7 +47,7 @@
 
   <div id="appFirstBootSplashScreen">
     <div class="relative flex flex-col items-center">
-      <img src="/icon-512.png" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
+      <img src="/icon-512.png?v=2" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
       <div class="mt-6 text-center">
         <h1 class="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-400">Pickle At</h1>
         <h2 class="text-3xl font-black tracking-tight text-white uppercase mt-0.5 filter drop-shadow-md">Chirag</h2>
@@ -297,6 +297,7 @@
         return str;
     }
 
+    // 🏆 FIXED FUNCTION LAYER: Syntax typo completely cleaned from index stream
     function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
         try {
             const [d, m, y] = dateStr.split('/');
