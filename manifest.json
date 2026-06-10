@@ -1,23 +1,21 @@
 {
-  "short_name": "Chirag Portal",
-  "name": "Pickle at Chirag Sports Desk",
+  "short_name": "Chirag App",
+  "name": "Chirag Sports Portal Mobile",
   "icons": [
     {
-      "src": "/icon-192.png?v=2.0.0",
+      "src": "/icon-192.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any maskable"
+      "sizes": "192x192"
     },
     {
-      "src": "/icon-512.png?v=2.0.0",
+      "src": "/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
+      "sizes": "512x512"
     }
   ],
-  "start_url": "/",
-  "background_color": "#020617",
-  "theme_color": "#020617",
+  "start_url": "/index.html",
+  "background_color": "#0b0f19",
+  "theme_color": "#0d1527",
   "display": "standalone",
   "orientation": "portrait"
 }
