@@ -8,11 +8,32 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
         body { font-family: 'Montserrat', sans-serif; background-color: #0b111e; }
+        /* Smooth transition when toggling layouts */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="text-slate-200 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto space-y-6">
+    <div id="authGatewayBlock" class="hidden max-w-md mx-auto mt-16 p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl fade-in">
+        <div class="text-center mb-6">
+            <h2 class="text-xl font-extrabold text-white tracking-tight">Resident Portal Login</h2>
+            <p class="text-xs text-slate-400 mt-1">Chirag Pickleball & Badminton Platform</p>
+        </div>
+        <form onsubmit="handlePortalLogin(event)" class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Google Email Address</label>
+                <input type="email" id="authEmailInput" required placeholder="name@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-orange-500">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Password Key</label>
+                <input type="password" id="authPasswordInput" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-orange-500">
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 font-extrabold py-3 rounded-xl hover:from-orange-400 transition-all text-xs uppercase tracking-wider">Sign Into Portal</button>
+        </form>
+    </div>
+
+    <div id="mainPortalWorkspace" class="hidden max-w-4xl mx-auto space-y-6 fade-in">
         
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
             <div>
@@ -77,18 +98,22 @@
             </div>
 
             <div class="space-y-6">
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg h-[240px] flex flex-col">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 pb-2 border-b border-slate-800">Your Booking Ledger</h3>
-                    <div class="flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 flex flex-col justify-center items-center" id="userPersonalLedgerLayout">
-                        <p>No matching records found.</p>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg h-[280px] flex flex-col">
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Your Booking Ledger</h3>
+                        <div class="flex gap-2 text-[9px] font-bold">
+                            <button id="tabUpcoming" onclick="toggleLedgerFilter(true)" class="text-orange-400 border-b border-orange-400">Upcoming</button>
+                            <button id="tabHistory" onclick="toggleLedgerFilter(false)" class="text-slate-500">History</button>
+                        </div>
                     </div>
+                    <div class="flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 custom-scrollbar" id="userPersonalLedgerLayout">
+                        </div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg h-[240px] flex flex-col">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg h-[280px] flex flex-col">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 pb-2 border-b border-slate-800">Live Club Schedule Matrix</h3>
-                    <div class="flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 flex flex-col justify-center items-center" id="globalClubScheduleLayout">
-                        <p>No upcoming present bookings logged.</p>
-                    </div>
+                    <div class="flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 custom-scrollbar" id="globalClubScheduleLayout">
+                        </div>
                 </div>
             </div>
 
@@ -96,33 +121,95 @@
     </div>
 
     <script>
-        // Static user profile session context alignment profile details
-        const activeSessionUserContext = { fullName: "rahul babbar", email: "rahulbabbar@msn.com" };
+        // Dynamic user profile storage context (Populated cleanly upon authorization handshake)
+        let activeSessionUserContext = null;
 
         let serverDatabaseCacheSnapshot = { users: [], bookings: [] };
         let activeSelectedChronoDate = "";
         let activeSelectedAsset = "PB Court 1";
         let activeSelectedTimeSlot = "";
+        let showUpcomingLedgerOnly = true;
 
+        // 🔄 1. MASTER INITIALIZATION SESSION VALIDATION HANDSHAKE
+        function verifyPortalIdentitySession() {
+            fetch('/api/check-session')
+                .then(res => {
+                    if (!res.ok) throw new Error("Unauthorized proxy block.");
+                    return res.json();
+                })
+                .then(data => {
+                    if (data && data.user) {
+                        activeSessionUserContext = data.user;
+                        displayWorkspaceDashboardUI();
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('mainPortalWorkspace').classList.add('hidden');
+                    document.getElementById('authGatewayBlock').classList.remove('hidden');
+                });
+        }
+
+        function handlePortalLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('authEmailInput').value.trim();
+            const password = document.getElementById('authPasswordInput').value;
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    activeSessionUserContext = data.user;
+                    displayWorkspaceDashboardUI();
+                } else {
+                    alert(data.message || "Invalid credentials.");
+                }
+            })
+            .catch(() => alert("Failed to communicate with authentication gateway engine."));
+        }
+
+        function executeLogoutSequence() {
+            fetch('/api/logout', { method: 'POST' })
+                .then(() => { window.location.reload(); });
+        }
+
+        function displayWorkspaceDashboardUI() {
+            document.getElementById('authGatewayBlock').classList.add('hidden');
+            document.getElementById('mainPortalWorkspace').classList.remove('hidden');
+            document.getElementById('welcomeHeading').innerText = `Welcome, ${activeSessionUserContext.fullName}`;
+            
+            buildCalendarTabs();
+            changeActiveAssetSelection('PB Court 1');
+            syncPortalDatabaseState();
+            
+            // Background pooling configurations loops 
+            setInterval(syncPortalDatabaseState, 7000);
+        }
+
+        // 📊 2. READ DATABASE OPERATIONS DATA STREAM
         function syncPortalDatabaseState() {
             fetch('/api/admin-fetch-dashboard-snapshot')
                 .then(res => res.json())
                 .then(snapshot => {
                     serverDatabaseCacheSnapshot = snapshot;
                     
-                    // Update user available token trackers dynamically
+                    // Direct dynamic token updates mapping
                     const selfProfile = snapshot.users.find(u => u.google_email.toLowerCase() === activeSessionUserContext.email.toLowerCase());
                     if(selfProfile) {
+                        activeSessionUserContext.tokensBalance = selfProfile.available_tokens;
                         document.getElementById('tokenBalanceDisplay').innerText = selfProfile.available_tokens;
                     }
 
                     renderTimelineMatrixCells();
                     renderLedgerDisplays();
                 })
-                .catch(err => console.log("Database data sync loop timed out or blocked."));
+                .catch(err => console.log("Data packet sync heartbeat error."));
         }
 
-        // Initialize 3-day calendar strips
+        // 📅 3. SYSTEM CLOCK DATE STRIP SELECTOR SYNCHRONIZATION
         function buildCalendarTabs() {
             const container = document.getElementById('calendarDateStrip');
             container.innerHTML = "";
@@ -184,30 +271,20 @@
             renderTimelineMatrixCells();
         }
 
-        // 🎯 BULLETPROOF NAME INTERACTION ENGINE MAPS ACROSS ALL COMBINATIONS
         function isCourtMatch(loggedName, selectedName) {
             if (!loggedName || !selectedName) return false;
-            
-            let logged = loggedName.toLowerCase().trim();
-            let selected = selectedName.toLowerCase().trim();
-            
-            // Standardize strings to clean alphanumeric variables
-            let n1 = logged.replace(/[^a-z0-9]/g, '');
-            let n2 = selected.replace(/[^a-z0-9]/g, '');
-            
-            // Bridge shorthand acronym mapping elements completely
+            let n1 = loggedName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            let n2 = selectedName.toLowerCase().replace(/[^a-z0-9]/g, '');
             if (n1.startsWith('pb')) n1 = n1.replace('pb', 'pickleball');
             if (n2.startsWith('pb')) n2 = n2.replace('pb', 'pickleball');
             if (n1.startsWith('bd')) n1 = n1.replace('bd', 'badminton');
             if (n2.startsWith('bd')) n2 = n2.replace('bd', 'badminton');
-            
-            // Catch raw generic layout definitions fallback safely
             if (n1 === "pickleballcourt") n1 = "pickleballcourt1";
             if (n2 === "pickleballcourt") n2 = "pickleballcourt1";
-
             return n1 === n2;
         }
 
+        // 🔒 4. TIMELINE TIME CELL GENERATION & HISTORIC AUTO-LOCK LOCKOUTS
         function renderTimelineMatrixCells() {
             const deck = document.getElementById('timingGridMatrixDeck');
             deck.innerHTML = "";
@@ -219,7 +296,15 @@
                 "18:00 - 19:00", "19:00 - 20:00", "20:00 - 21:00", "21:00 - 22:00"
             ];
 
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const currentHour = now.getHours();
+
             operationsSlots.forEach(slot => {
+                // Parse out start hour limit thresholds
+                const startHour = parseInt(slot.split(':')[0]);
+                const isPastTimeSlot = (activeSelectedChronoDate === todayStr && startHour <= currentHour);
+
                 const checkReserved = serverDatabaseCacheSnapshot.bookings.find(b => {
                     const dateClean = String(b.date).split('T')[0].trim();
                     return dateClean === activeSelectedChronoDate && 
@@ -230,7 +315,8 @@
                 const cell = document.createElement('button');
                 cell.className = "w-full border p-3 rounded-xl flex flex-col items-center justify-center transition-all text-center";
 
-                if(checkReserved) {
+                if (checkReserved) {
+                    // Absolute isolation permission enforcement gates
                     const selfOwned = checkReserved.booked_by.toLowerCase().trim() === activeSessionUserContext.fullName.toLowerCase().trim();
                     cell.className = selfOwned
                         ? "w-full bg-emerald-950/30 border-emerald-500/30 p-3 rounded-xl flex flex-col items-center justify-center text-center shadow-inner"
@@ -241,6 +327,14 @@
                         <span class="text-[9px] uppercase font-bold mt-0.5 ${selfOwned ? 'text-emerald-400':'text-slate-600'}">${selfOwned ? 'Your Match' : 'Occupied'}</span>
                     `;
                     if(!selfOwned) cell.disabled = true;
+                } else if (isPastTimeSlot) {
+                    // Historic calendar hour lock parameters triggers
+                    cell.className = "w-full bg-slate-950/20 border-slate-900/40 p-3 rounded-xl flex flex-col items-center justify-center text-center opacity-20 cursor-not-allowed";
+                    cell.innerHTML = `
+                        <span class="text-xs font-bold text-slate-600 line-through">${slot}</span>
+                        <span class="text-[9px] uppercase font-bold mt-0.5 text-slate-700">Expired</span>
+                    `;
+                    cell.disabled = true;
                 } else {
                     const activeSelect = activeSelectedTimeSlot === slot;
                     cell.className = activeSelect
@@ -260,9 +354,14 @@
             });
         }
 
+        // 🔒 5. POST TRANSACTION OPERATION EXECUTION PATHS
         function executeBookingLockPipeline() {
             if(!activeSelectedTimeSlot) {
                 alert("Please tap to select an available timeline cell frame first.");
+                return;
+            }
+            if(parseInt(activeSessionUserContext.tokensBalance) <= 0) {
+                alert("Transaction Blocked: Your active structural token ledger pool has reached zero.");
                 return;
             }
 
@@ -274,7 +373,6 @@
                 timeSlot: activeSelectedTimeSlot
             };
 
-            // Targets unified proxy route dispatch cleanly
             fetch('/api/admin-post-action-dispatch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -290,7 +388,7 @@
                     alert(data.message || "Execution tracking rejected.");
                 }
             })
-            .catch(err => alert("Operational pipeline timeout. Direct row entry dropped."));
+            .catch(() => alert("Operational pipeline timeout. Direct row entry dropped."));
         }
 
         function executeReleasePipeline(bookingId) {
@@ -308,20 +406,36 @@
                     syncPortalDatabaseState();
                 }
             })
-            .catch(err => alert("Failed to transmit structural row update."));
+            .catch(() => alert("Failed to transmit structural row update."));
         }
 
-        function executeLogoutSequence() {
-            fetch('/api/logout', { method: 'POST' })
-                .then(() => { window.location.reload(); });
+        function toggleLedgerFilter(showUpcoming) {
+            showUpcomingLedgerOnly = showUpcoming;
+            document.getElementById('tabUpcoming').className = showUpcoming ? "text-orange-400 border-b border-orange-400" : "text-slate-500";
+            document.getElementById('tabHistory').className = !showUpcoming ? "text-orange-400 border-b border-orange-400" : "text-slate-500";
+            renderLedgerDisplays();
         }
 
+        // 📑 6. CHRONO DISPATCH SORTING LEDGER & GLOBAL TERMINAL RENDERS
         function renderLedgerDisplays() {
             const pLedger = document.getElementById('userPersonalLedgerLayout');
             const gLedger = document.getElementById('globalClubScheduleLayout');
 
-            // 1. Process Personal Ledger Frame
-            const personalRows = serverDatabaseCacheSnapshot.bookings.filter(b => b.booked_by.toLowerCase().trim() === activeSessionUserContext.fullName.toLowerCase().trim());
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const currentHour = now.getHours();
+
+            // 1. Process Isolated Multi-User Personal Ledger Frame Arrays
+            let personalRows = serverDatabaseCacheSnapshot.bookings.filter(b => b.booked_by.toLowerCase().trim() === activeSessionUserContext.fullName.toLowerCase().trim());
+            
+            // Apply strict Chrono splitting filters parameters rules
+            personalRows = personalRows.filter(b => {
+                const bDate = b.date.split('T')[0];
+                const bHour = parseInt(b.time_slot.split(':') [0]);
+                const hasPassed = (bDate < todayStr) || (bDate === todayStr && bHour <= currentHour);
+                return showUpcomingLedgerOnly ? !hasPassed : hasPassed;
+            });
+
             if(personalRows.length === 0) {
                 pLedger.className = "flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 flex flex-col justify-center items-center";
                 pLedger.innerHTML = `<p>No matching records found.</p>`;
@@ -336,14 +450,16 @@
                             <p class="font-bold text-slate-300">${b.court_name} ➔ ${b.time_slot}</p>
                             <p class="text-[10px] text-slate-500 mt-0.5">Date: ${b.date.split('T')[0]}</p>
                         </div>
-                        <button onclick="executeReleasePipeline('${b.booking_id}')" class="text-[10px] font-bold text-red-400 bg-red-500/5 border border-red-500/20 px-2 py-1 rounded-md uppercase">Release</button>
+                        ${showUpcomingLedgerOnly ? `<button onclick="executeReleasePipeline('${b.booking_id}')" class="text-[10px] font-bold text-red-400 bg-red-500/5 border border-red-500/20 px-2 py-1 rounded-md uppercase">Release</button>` : ''}
                     `;
                     pLedger.appendChild(row);
                 });
             }
 
-            // 2. Process Global Schedule Frame
-            const globalRows = serverDatabaseCacheSnapshot.bookings.filter(b => b.date.split('T')[0] === activeSelectedChronoDate);
+            // 2. Process Global Live Terminal Console Feed (Filtered to Upcoming Match elements for Today)
+            let globalRows = serverDatabaseCacheSnapshot.bookings.filter(b => b.date.split('T')[0] === todayStr);
+            globalRows = globalRows.filter(b => parseInt(b.time_slot.split(':')[0]) > currentHour);
+
             if(globalRows.length === 0) {
                 gLedger.className = "flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 flex flex-col justify-center items-center";
                 gLedger.innerHTML = `<p>No upcoming present bookings logged.</p>`;
@@ -352,24 +468,25 @@
                 gLedger.innerHTML = "";
                 globalRows.forEach(b => {
                     const card = document.createElement('div');
-                    card.className = "bg-slate-950/40 border border-slate-800/60 p-2 rounded-xl flex justify-between items-center text-[11px]";
+                    card.className = "bg-slate-950/40 border border-slate-800/60 p-2.5 rounded-xl text-[11px] leading-relaxed text-slate-300 tracking-wide";
+                    // 🎯 EXACT SPECIFICATION FORMAT MAPPED: [Court Name] · [Date] · [Time Slot] ➔ [Member Name]
                     card.innerHTML = `
-                        <span class="font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">${b.time_slot.split(' ')[0]}</span>
-                        <span class="text-slate-300 font-semibold truncate max-w-[100px]">${b.booked_by}</span>
-                        <span class="text-[9px] font-bold text-orange-400 uppercase">${b.court_name.replace('Court ', '')}</span>
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-orange-400 text-xs">${b.court_name}</span>
+                            <span class="text-[10px] text-slate-500">${b.date.split('T')[0]}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-1 pt-1 border-t border-slate-900">
+                            <span class="text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px] font-mono">${b.time_slot}</span>
+                            <span class="text-amber-400 font-bold uppercase tracking-wider">${b.booked_by}</span>
+                        </div>
                     `;
                     gLedger.appendChild(card);
                 });
             }
         }
 
-        // Initialize lifecycle sequences
-        window.addEventListener('DOMContentLoaded', () => {
-            buildCalendarTabs();
-            changeActiveAssetSelection('PB Court 1');
-            syncPortalDatabaseState();
-            setInterval(syncPortalDatabaseState, 7000);
-        });
+        // Initialize active boot hook triggers sequences
+        window.addEventListener('DOMContentLoaded', verifyPortalIdentitySession);
     </script>
 </body>
 </html>
