@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chirag Sports Portal — Member Desk</title>
-  <link rel="manifest" href="/manifest.json?v=7.4.1">
+  <link rel="manifest" href="/manifest.json?v=7.4.5">
   <meta name="theme-color" content="#0d1527">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="/icon-192.png?v=7.4.1">
+  <link rel="apple-touch-icon" href="/icon-192.png?v=7.4.5">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #0b0f19; }
@@ -79,7 +79,7 @@
             <div class="text-2xl bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl text-center">🏆</div>
             <div><h3 id="lblWorkspaceMemberName" class="text-sm font-black text-slate-100">--</h3><p id="lblWorkspaceMemberEmail" class="text-[10px] text-slate-400 font-mono mt-0.5">--</p></div>
          </div>
-         <div class="text-right"><span class="text-[9px] uppercase font-black text-slate-500 tracking-wider block">Available Tokens</span><span id="lblWorkspaceAvailableTokens" class="text-lg font-black text-amber-400 font-mono">0</span></div>
+         <div class="text-right"><span class="text-[9px] uppercase font-black text-slate-500 block">Available Tokens</span><span id="lblWorkspaceAvailableTokens" class="text-lg font-black text-amber-400 font-mono">0</span></div>
       </div>
 
       <div class="bg-[#111625] border border-slate-800/80 p-3.5 rounded-2xl shadow-md space-y-2">
@@ -126,40 +126,33 @@
     const TIME_SLOTS = ["07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", "19:00 - 20:00", "20:00 - 21:00"];
     let selectedUserAsset = "Pickleball Court 1"; let selectedUserDateStr = ""; let userActiveBookingsLogs = []; let sessionMemberProfile = null; let selectedTentativeSlotMemory = ""; let activeUserLogTab = "upcoming";
 
-    window.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('action') === 'register') {
-            toggleInterfaceView('register');
-            const cachedEmail = sessionStorage.getItem('gate_verified_email');
-            const cachedCode = sessionStorage.getItem('gate_verified_code');
-            if (cachedEmail && cachedCode) {
-                document.getElementById('regEmailField').value = cachedEmail;
-                document.getElementById('regCodeField').value = cachedCode;
-                document.getElementById('regEmailField').setAttribute('disabled', 'true');
-                document.getElementById('regCodeField').setAttribute('disabled', 'true');
+    // ⚡ CHECK AUTOMATIC SECURE COOKIE HANDSHAKE IMMEDIATELY ON APPLICATION BOOT UP RUN
+    function checkSecureSessionStatus() {
+        fetch('/api/check-session')
+        .then(r => r.json()).then(res => {
+            if (res.status === "authorized") {
+                sessionMemberProfile = res.user;
+                document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
+                document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
+                document.getElementById('lblWorkspaceAvailableTokens').innerText = sessionMemberProfile.available_tokens ?? 2;
+                if(res.ticker) document.getElementById('systemGlobalTicker').innerText = res.ticker;
+                toggleInterfaceView('workspace'); initUserCalendarStrip(); switchSelectedCourtAsset("Pickleball Court 1", 0); startPollingLiveWorkspaceLogs();
+            } else {
+                toggleInterfaceView('login');
             }
-        }
-    });
+        }).catch(() => toggleInterfaceView('login'));
+    }
+    window.addEventListener('DOMContentLoaded', checkSecureSessionStatus);
+
+    function isCourtMatch(loggedName, selectedName) {
+        let cleanLog = String(loggedName).trim().toLowerCase();
+        let cleanSel = String(selectedName).trim().toLowerCase();
+        if (cleanLog === cleanSel) return true;
+        if (cleanSel === "pickleball court 1" && (cleanLog === "pickleball court" || cleanLog === "pickleball court 1")) return true;
+        return false;
+    }
 
     function handleForgotPasswordTrigger() { alert("🔒 Security Reset: Please contact Administration Management directly to restore or replace your account password key token."); }
-
-    function evaluateStorageSessionSync() {
-      const savedToken = localStorage.getItem('chirag_session_token');
-      const savedProfile = localStorage.getItem('chirag_member_profile');
-      if (savedToken && savedProfile) {
-        try {
-          sessionMemberProfile = JSON.parse(savedProfile);
-          window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
-            document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
-            toggleInterfaceView('workspace'); initUserCalendarStrip(); switchSelectedCourtAsset("Pickleball Court 1", 0); startPollingLiveWorkspaceLogs();
-          });
-          return true;
-        } catch (e) { localStorage.clear(); }
-      }
-      return false;
-    }
-    const isUserAuthenticated = evaluateStorageSessionSync();
 
     function toggleInterfaceView(targetView) {
         const panels = { 'login': document.getElementById('viewLoginPanel'), 'register': document.getElementById('viewRegisterPanel'), 'workspace': document.getElementById('viewWorkspacePanel') };
@@ -173,8 +166,6 @@
         fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
         .then(r => r.json()).then(res => {
             if(res.status === "error") return alert(res.message);
-            localStorage.setItem('chirag_session_token', res.token);
-            localStorage.setItem('chirag_member_profile', JSON.stringify(res.user));
             sessionMemberProfile = res.user;
             document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
             document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
@@ -185,13 +176,13 @@
     }
 
     function executeMemberAccountRegistration() {
-        const email = document.getElementById('regEmailField').value.trim() || sessionStorage.getItem('gate_verified_email');
+        const email = document.getElementById('regEmailField').value.trim();
         const fullName = document.getElementById('regNameField').value.trim();
-        const registrationCode = document.getElementById('regCodeField').value.trim() || sessionStorage.getItem('gate_verified_code');
+        const registrationCode = document.getElementById('regCodeField').value.trim();
         const password = document.getElementById('regPasswordField').value.trim();
         fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, fullName, registrationCode, password }) })
         .then(r => r.json()).then(res => {
-            if (res.status === "success") { alert("✓ Account created! Please log in."); sessionStorage.clear(); window.location.href="/index.html"; } 
+            if (res.status === "success") { alert("✓ Account created! Please log in."); window.location.href="/index.html"; } 
             else { alert(res.message); }
         });
     }
@@ -236,7 +227,7 @@
         const grid = document.getElementById('userTimeSlotMatrixGrid'); if(!grid) return;
         let html = "";
         TIME_SLOTS.forEach(slot => {
-            const matchRow = userActiveBookingsLogs.find(l => l.court_name === selectedUserAsset && l.date === selectedUserDateStr && l.time_slot.trim() === slot.trim());
+            const matchRow = userActiveBookingsLogs.find(l => isCourtMatch(l.court_name, selectedUserAsset) && l.date === selectedUserDateStr && l.time_slot.trim() === slot.trim());
             let blockStyle = "bg-[#141b2d] border-slate-900/80 text-slate-300 hover:border-slate-700 cursor-pointer";
             let statusLabel = "AVAILABLE SLOT"; let badgeMarker = ``; let action = `onclick="selectTentativeUserSlot('${slot}')"`;
 
@@ -276,7 +267,8 @@
         if (filteredPersonalRows.length === 0) { container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4 font-mono">No matching records found.</p>`; return; }
         filteredPersonalRows.forEach(b => {
             let cancelActionBtn = activeUserLogTab === "upcoming" ? `<button onclick="executeSelfMemberCancellation('${b.booking_id}')" class="text-[9px] bg-red-950/40 text-red-400 border border-red-900/30 px-3 py-1.5 rounded font-black uppercase hover:bg-red-500 hover:text-slate-950 transition-all cursor-pointer">Cancel</button>` : `<span class="text-[8px] border border-slate-800 text-slate-500 px-2 py-1 rounded font-mono uppercase font-bold">COMPLETED</span>`;
-            container.innerHTML += `<div class="flex justify-between items-center bg-[#090d16] p-3 rounded-xl border border-slate-900"><div><h4 class="font-bold text-slate-200 text-xs">${b.court_name}</h4><p class="text-[10px] text-slate-400 font-mono mt-0.5">${b.date} | ${b.time_slot}</p></div>${cancelActionBtn}</div>`;
+            let displayCourt = b.court_name === "Pickleball Court" ? "Pickleball Court 1" : b.court_name;
+            container.innerHTML += `<div class="flex justify-between items-center bg-[#090d16] p-3 rounded-xl border border-slate-900"><div><h4 class="font-bold text-slate-200 text-xs">${displayCourt}</h4><p class="text-[10px] text-slate-400 font-mono mt-0.5">${b.date} | ${b.time_slot}</p></div>${cancelActionBtn}</div>`;
         });
     }
 
@@ -293,7 +285,7 @@
     }
 
     function executeSelfMemberCancellation(bookingId) {
-        if(confirm("Are you sure you want to cancel this booking slot rows?")) {
+        if(confirm("Are you sure you want to cancel this booking slot?")) {
             fetch('/api/admin-force-cancel-booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId }) })
             .then(r => r.json()).then(res => { if(res.status === "success") { alert("✓ Booking successfully canceled!"); syncUserLogsAndMatrix(); } });
         }
@@ -305,18 +297,24 @@
         let upcomingsOnly = userActiveBookingsLogs.map(match => { return { ...match, parsedTime: parseAdminDateTime(String(match.date).trim(), String(match.time_slot).trim()) }; }).filter(match => match.parsedTime > nowIST);
         upcomingsOnly.sort((a, b) => b.parsedTime - a.parsedTime);
 
-        if (upcomingsOnly.length === 0) { container.innerHTML = `<p class="text-xs text-slate-600 text-center py-6 font-mono">No upcoming present bookings logged.</p>`; return; }
+        if (upcomingsOnly.length === 0) { container.innerHTML = `<p class="text-xs text-slate-600 text-center py-6 font-mono">No upcoming present bookings logged.</p>`; return; return; }
         upcomingsOnly.forEach(match => {
             const isSportPickle = match.court_name.includes("Pickleball"); const sportIcon = isSportPickle ? "🏓" : "🏸";
             const nameColorClass = match.booked_by === sessionMemberProfile?.full_name ? "text-red-400" : "text-cyan-400";
-            container.innerHTML += `<div class="flex justify-between items-center bg-[#090d16] p-3 rounded-xl border border-slate-900/60 shadow-sm"><div class="flex items-center space-x-3"><div class="text-xl bg-[#141b2d] p-1.5 rounded-lg border border-slate-800/60">${sportIcon}</div><div><h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-amber-500 font-mono text-[10px] ml-1">${match.date}</span></h4><p class="text-[10px] text-slate-400 font-mono mt-0.5 font-bold">${match.time_slot}</p></div></div><div class="text-right flex flex-col items-end"><span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block">MEMBER</span><span class="text-xs font-black tracking-tight ${nameColorClass} mt-0.5">${match.booked_by}</span></div></div>`;
+            let displayCourt = match.court_name === "Pickleball Court" ? "Pickleball Court 1" : match.court_name;
+            container.innerHTML += `<div class="flex justify-between items-center bg-[#090d16] p-3 rounded-xl border border-slate-900/60 shadow-sm"><div class="flex items-center space-x-3"><div class="text-xl bg-[#141b2d] p-1.5 rounded-lg border border-slate-800/60">${sportIcon}</div><div><h4 class="font-bold text-slate-200 text-xs">${displayCourt} <span class="text-amber-500 font-mono text-[10px] ml-1">${match.date}</span></h4><p class="text-[10px] text-slate-400 font-mono mt-0.5 font-bold">${match.time_slot}</p></div></div><div class="text-right flex flex-col items-end"><span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block">MEMBER</span><span class="text-xs font-black tracking-tight ${nameColorClass} mt-0.5">${match.booked_by}</span></div></div>`;
         });
     }
 
     let deferredPwaPromptMemory = null;
     window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPwaPromptMemory = e; const banner = document.getElementById('pwaDownloadBannerContainer'); if(banner) banner.classList.remove('hidden'); });
     function executeNativePwaInstallation() { if (!deferredPwaPromptMemory) return; deferredPwaPromptMemory.prompt(); deferredPwaPromptMemory.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') { const banner = document.getElementById('pwaDownloadBannerContainer'); if(banner) banner.remove(); } deferredPwaPromptMemory = null; }); }
-    function executeLogoutSequence() { if(confirm("Terminate your secure session authorization?")) { localStorage.clear(); window.location.reload(); } }
+    
+    function executeLogoutSequence() { 
+        if(confirm("Terminate your secure session authorization?")) { 
+            fetch('/api/logout', { method: 'POST' }).then(() => window.location.reload());
+        } 
+    }
   </script>
 </body>
 </html>
