@@ -20,7 +20,7 @@ message: 'Render server running'
 });
 });
 
-app.post('/api/test-login', async (req, res) => {
+app.get('/api/test-login', async (req, res) => {
 
 try {
 
