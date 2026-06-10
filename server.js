@@ -14,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 🎯 REPLACE THIS WITH YOUR ACTIVE GOOGLE WEB APP DEPLOYMENT URL STRING FROM POINT A
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycby_elXPrUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvD0eS/exec";
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
 app.use(express.json());
 app.use(cookieParser());
