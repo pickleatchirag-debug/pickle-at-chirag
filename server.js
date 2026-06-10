@@ -5,6 +5,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const APPS_SCRIPT_URL =
+'https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec';
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -15,6 +18,41 @@ res.json({
 success: true,
 message: 'Render server running'
 });
+});
+
+app.post('/api/test-login', async (req, res) => {
+
+try {
+
+```
+const response = await fetch(APPS_SCRIPT_URL, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    action: 'memberLogin',
+    email: 'rahulbabbar@msn.com',
+    password: 'asdfghjkl'
+  })
+});
+
+const data = await response.json();
+
+res.json(data);
+```
+
+} catch(err) {
+
+```
+res.status(500).json({
+  success: false,
+  error: err.toString()
+});
+```
+
+}
+
 });
 
 app.get('*', (req, res) => {
