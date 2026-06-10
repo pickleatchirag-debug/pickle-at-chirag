@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ⚡ PASTE YOUR REFRESHED GOOGLE MACRO SCRIPT WEB APP URL DIRECTLY BELOW:
+// ⚡ MASTER SYNCHRONIZED DEPLOYMENT PIPELINE URL
 const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxbiHJTFD4f7OmCoG8AfpV79IkEoqVZ8WWEUJ0PuIs40VWB41rDRyjnVzb5Zb7BUHkyJQ/exec";
 
 let masterCachedUsersRegistry = [];
@@ -91,7 +91,6 @@ app.post('/api/register', async (req, res) => {
     } catch(e) { res.json({ status: "error", message: "Write failed." }); }
 });
 
-// 🔥 CORE FIX: FORMAT INBOUND STRINGS SECURELY
 app.post('/api/secure-booking', async (req, res) => {
     const { courtName, sportType, userName, date, timeSlot } = req.body;
     const bId = "BK-" + Math.floor(1000 + Math.random() * 9000);
@@ -116,6 +115,7 @@ app.post('/api/secure-booking', async (req, res) => {
 });
 
 app.post('/api/admin-update-ticker', (req, res) => { customGlobalTickerMemory = req.body.tickerText; res.json({ status: "success" }); });
+
 app.post('/api/admin-force-cancel-booking', async (req, res) => {
     const { bookingId } = req.body;
     try {
@@ -124,6 +124,18 @@ app.post('/api/admin-force-cancel-booking', async (req, res) => {
         setTimeout(syncDatabaseFromGoogleSheets, 1000);
         res.json({ status: "success" });
     } catch (e) { res.json({ status: "error" }); }
+});
+
+// ⚡ RE-ADDED MISSING ROUTE: LINK SECONDARY ADMIN REGISTRATIONS TO SPREADSHEET
+app.post('/api/admin-add-new-manager', async (req, res) => {
+    const { email, fullName, password } = req.body;
+    try {
+        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+        const response = await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "addAdminRow", fullName, email, password }) });
+        const result = await response.json();
+        if(result.status === "success") { setTimeout(syncDatabaseFromGoogleSheets, 1200); res.json({ status: "success" }); } 
+        else { res.json({ status: "error" }); }
+    } catch(e) { res.json({ status: "error" }); }
 });
 
 app.post('/api/admin-fetch-dashboard-snapshot', (req, res) => { res.json({ users: masterCachedUsersRegistry, bookings: masterCachedBookingsRegistry, whitelisted: masterCachedWhitelistRegistry }); });

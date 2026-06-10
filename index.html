@@ -74,32 +74,21 @@
     </div>
 
     <div id="viewWorkspacePanel" class="hidden space-y-4">
-      
       <div class="bg-[#111625] border border-slate-800/80 p-4 rounded-2xl flex justify-between items-center shadow-lg">
          <div class="flex items-center space-x-3">
             <div class="text-2xl bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl text-center">🏆</div>
-            <div>
-               <h3 id="lblWorkspaceMemberName" class="text-sm font-black text-slate-100">--</h3>
-               <p id="lblWorkspaceMemberEmail" class="text-[10px] text-slate-400 font-mono mt-0.5">--</p>
-            </div>
+            <div><h3 id="lblWorkspaceMemberName" class="text-sm font-black text-slate-100">--</h3><p id="lblWorkspaceMemberEmail" class="text-[10px] text-slate-400 font-mono mt-0.5">--</p></div>
          </div>
-         <div class="text-right">
-            <span class="text-[9px] uppercase font-black text-slate-500 tracking-wider block">Available Tokens</span>
-            <span id="lblWorkspaceAvailableTokens" class="text-lg font-black text-amber-400 font-mono">0</span>
-         </div>
+         <div class="text-right"><span class="text-[9px] uppercase font-black text-slate-500 tracking-wider block">Available Tokens</span><span id="lblWorkspaceAvailableTokens" class="text-lg font-black text-amber-400 font-mono">0</span></div>
       </div>
 
       <div class="bg-[#111625] border border-slate-800/80 p-3.5 rounded-2xl shadow-md space-y-2">
-         <span class="text-[10px] uppercase font-black tracking-wider text-fuchsia-400 flex items-center gap-1.5">
-           <span class="w-4 h-4 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center font-mono text-[9px]">1</span> Select the Date
-         </span>
+         <span class="text-[10px] uppercase font-black tracking-wider text-fuchsia-400 flex items-center gap-1.5"><span class="w-4 h-4 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center font-mono text-[9px]">1</span> Select the Date</span>
          <div id="userCalendarStrip" class="flex justify-between items-center gap-2"></div>
       </div>
 
       <div class="bg-[#111625] border border-slate-800/80 p-3.5 rounded-2xl shadow-md space-y-2">
-         <span class="text-[10px] uppercase font-black tracking-wider text-lime-400 flex items-center gap-1.5">
-           <span class="w-4 h-4 rounded-full bg-lime-500/10 text-lime-400 flex items-center justify-center font-mono text-[9px]">2</span> Select the Court
-         </span>
+         <span class="text-[10px] uppercase font-black tracking-wider text-lime-400 flex items-center gap-1.5"><span class="w-4 h-4 rounded-full bg-lime-500/10 text-lime-400 flex items-center justify-center font-mono text-[9px]">2</span> Select the Court</span>
          <div class="grid grid-cols-3 gap-2 bg-[#070a12] p-1 rounded-xl border border-slate-900 text-xs font-bold text-center">
            <button id="courtBtn0" onclick="switchSelectedCourtAsset('Pickleball Court 1', 0)" class="p-2 rounded-lg font-bold transition-all">PB Court 1</button>
            <button id="courtBtn1" onclick="switchSelectedCourtAsset('Pickleball Court 2', 1)" class="p-2 rounded-lg font-bold transition-all text-slate-500">PB Court 2</button>
@@ -109,41 +98,27 @@
 
       <div class="bg-[#111625] border border-slate-800/80 p-4 rounded-2xl shadow-xl space-y-3">
          <div class="flex justify-between items-center border-b border-slate-800/60 pb-1.5">
-            <span class="text-[10px] uppercase font-black tracking-wider text-amber-400 flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-mono text-[9px]">3</span> Select Booking Time Frame
-            </span>
+            <span class="text-[10px] uppercase font-black tracking-wider text-amber-400 flex items-center gap-1.5"><span class="w-4 h-4 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center font-mono text-[9px]">3</span> Select Booking Time Frame</span>
             <span id="lblActiveAssetHeaderIndicator" class="text-[10px] font-black uppercase text-red-400 font-mono tracking-wider">PICKLEBALL COURT 1</span>
          </div>
          <div id="userTimeSlotMatrixGrid" class="grid grid-cols-2 gap-2.5 max-h-[240px] overflow-y-auto pr-1"></div>
-         <div class="pt-1">
-            <button onclick="commitSecureMemberBooking()" class="w-full bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-xl hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer">🔒 Lock Booking Reservation Frame</button>
-         </div>
+         <div class="pt-1"><button onclick="commitSecureMemberBooking()" class="w-full bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-xl hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer">🔒 Lock Booking Reservation Frame</button></div>
       </div>
 
       <div class="bg-[#111625] border border-slate-800/80 p-4 rounded-2xl shadow-lg space-y-3">
         <div class="flex justify-between items-center border-b border-slate-800/60 pb-1.5">
           <h2 class="text-xs font-black tracking-wider uppercase text-slate-200">Your Booking Ledger</h2>
-          <div class="flex space-x-3 text-[10px] font-black uppercase tracking-wider">
-            <button id="tabUserLogUpcoming" onclick="toggleUserLogTab('upcoming')" class="text-emerald-400 underline decoration-2 underline-offset-4 font-black cursor-pointer">Upcoming Matches</button>
-            <button id="tabUserLogPast" onclick="toggleUserLogTab('past')" class="text-slate-500 font-black cursor-pointer">History Log</button>
-          </div>
+          <div class="flex space-x-3 text-[10px] font-black uppercase tracking-wider"><button id="tabUserLogUpcoming" onclick="toggleUserLogTab('upcoming')" class="text-emerald-400 underline decoration-2 underline-offset-4 font-black cursor-pointer">Upcoming Matches</button><button id="tabUserLogPast" onclick="toggleUserLogTab('past')" class="text-slate-500 font-black cursor-pointer">History Log</button></div>
         </div>
         <div id="userPersonalLedgerContainer" class="max-h-[160px] overflow-y-auto space-y-2 pr-1"></div>
       </div>
 
       <div class="bg-[#111625] border border-slate-800/80 p-4 rounded-2xl shadow-lg space-y-3">
-        <div class="border-b border-slate-800/60 pb-1.5 flex justify-between items-center">
-           <h2 class="text-xs font-black tracking-wider uppercase text-slate-200 flex items-center gap-1.5">
-             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Live Club Schedule Matrix
-           </h2>
-           <span class="text-[9px] bg-[#070a12] border border-slate-800 px-2 py-0.5 rounded text-cyan-400 font-black uppercase tracking-wider">All Courts</span>
-        </div>
+        <div class="border-b border-slate-800/60 pb-1.5 flex justify-between items-center"><h2 class="text-xs font-black tracking-wider uppercase text-slate-200 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Live Club Schedule Matrix</h2><span class="text-[9px] bg-[#070a12] border border-slate-800 px-2 py-0.5 rounded text-cyan-400 font-black uppercase tracking-wider">All Courts</span></div>
         <div id="globalClubLogLedgerContainer" class="max-h-[240px] overflow-y-auto space-y-2 pr-1"></div>
       </div>
 
-      <div class="text-center pt-2">
-         <button onclick="executeLogoutSequence()" class="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-red-400 border border-slate-800/60 px-5 py-2.5 rounded-xl bg-[#111625]/40 transition-all cursor-pointer">✕ Terminate Session Authorization</button>
-      </div>
+      <div class="text-center pt-2"><button onclick="executeLogoutSequence()" class="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-red-400 border border-slate-800/60 px-5 py-2.5 rounded-xl bg-[#111625]/40 transition-all cursor-pointer">✕ Terminate Session Authorization</button></div>
     </div>
   </main>
 
@@ -166,10 +141,7 @@
         }
     });
 
-    // ⚡ FIXED 1 FLUID HANDLING: FORGOT PASSWORD ALERTS
-    function handleForgotPasswordTrigger() {
-        alert("🔒 Security Reset: Please get in touch with the Administration Management board directly to drop your security row profile and map a new operational password key token.");
-    }
+    function handleForgotPasswordTrigger() { alert("🔒 Security Reset: Please contact Administration Management directly to restore or replace your account password key token."); }
 
     function evaluateStorageSessionSync() {
       const savedToken = localStorage.getItem('chirag_session_token');
@@ -260,16 +232,13 @@
         syncUserLogsAndMatrix();
     }
 
-    // ⚡ FIXED 4: STRIPPED OUT THE 'NEW' GREEN MARKER TEXT FROM CODE CELLS COMPLETELY
     function renderUserMatrixGridUI() {
         const grid = document.getElementById('userTimeSlotMatrixGrid'); if(!grid) return;
         let html = "";
         TIME_SLOTS.forEach(slot => {
             const matchRow = userActiveBookingsLogs.find(l => l.court_name === selectedUserAsset && l.date === selectedUserDateStr && l.time_slot.trim() === slot.trim());
             let blockStyle = "bg-[#141b2d] border-slate-900/80 text-slate-300 hover:border-slate-700 cursor-pointer";
-            let statusLabel = "AVAILABLE SLOT"; 
-            let badgeMarker = ``; // Erased 'NEW' indicator completely
-            let action = `onclick="selectTentativeUserSlot('${slot}')"`;
+            let statusLabel = "AVAILABLE SLOT"; let badgeMarker = ``; let action = `onclick="selectTentativeUserSlot('${slot}')"`;
 
             if(matchRow) {
                 let isMine = matchRow.booked_by === sessionMemberProfile.full_name;
@@ -277,9 +246,7 @@
                 statusLabel = isMine ? "YOUR LOCKED SESSION" : "OCCUPIED CELL";
                 badgeMarker = isMine ? `<span class="bg-red-500/10 text-red-400 border border-red-500/20 px-1.5 py-0.5 rounded text-[8px] font-black tracking-wide shrink-0">ENHANCED</span>` : '';
                 action = "";
-            } else if(selectedTentativeSlotMemory === slot) {
-                blockStyle = "border-amber-400 bg-amber-950/20 text-amber-400 font-black"; statusLabel = "SELECTED CELL";
-            }
+            } else if(selectedTentativeSlotMemory === slot) { blockStyle = "border-amber-400 bg-amber-950/20 text-amber-400 font-black"; statusLabel = "SELECTED CELL"; }
             html += `<div ${action} class="border p-3 rounded-xl text-center flex flex-col justify-center items-center select-none transition-all relative ${blockStyle}"><div class="flex items-center justify-center space-x-1 w-full"><span class="text-xs font-mono font-bold tracking-tight">${slot}</span>${badgeMarker}</div><span class="text-[8px] uppercase font-black mt-1 tracking-widest text-slate-500 block">${statusLabel}</span></div>`;
         });
         grid.innerHTML = html;
@@ -299,26 +266,16 @@
       } catch(e) { return new Date(0); }
     }
 
-    // ⚡ FIXED 2 LOGIC HUB: ACTIVE MULTI-TAB FILTERS (UPCOMING VS HISTORIC LEDGERS)
     function renderUserPersonalLedgerUI() {
         const container = document.getElementById('userPersonalLedgerContainer'); if(!container) return;
-        container.innerHTML = "";
-        const nowIST = getNowLocalIST();
-
-        let myRows = userActiveBookingsLogs.filter(b => b.booked_by === sessionMemberProfile.full_name).map(b => {
-            return { ...b, parsedTime: parseAdminDateTime(String(b.date).trim(), String(b.time_slot).trim()) };
-        });
-
-        // Split data based on layout activeUserLogTab state selection
+        container.innerHTML = ""; const nowIST = getNowLocalIST();
+        let myRows = userActiveBookingsLogs.filter(b => b.booked_by === sessionMemberProfile.full_name).map(b => { return { ...b, parsedTime: parseAdminDateTime(String(b.date).trim(), String(b.time_slot).trim()) }; });
         let filteredPersonalRows = myRows.filter(b => activeUserLogTab === "upcoming" ? b.parsedTime > nowIST : b.parsedTime <= nowIST);
-        
-        // Sort: Chronological for upcoming matches, reverse for history logs
         filteredPersonalRows.sort((a, b) => activeUserLogTab === "upcoming" ? a.parsedTime - b.parsedTime : b.parsedTime - a.parsedTime);
 
         if (filteredPersonalRows.length === 0) { container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4 font-mono">No matching records found.</p>`; return; }
         filteredPersonalRows.forEach(b => {
             let cancelActionBtn = activeUserLogTab === "upcoming" ? `<button onclick="executeSelfMemberCancellation('${b.booking_id}')" class="text-[9px] bg-red-950/40 text-red-400 border border-red-900/30 px-3 py-1.5 rounded font-black uppercase hover:bg-red-500 hover:text-slate-950 transition-all cursor-pointer">Cancel</button>` : `<span class="text-[8px] border border-slate-800 text-slate-500 px-2 py-1 rounded font-mono uppercase font-bold">COMPLETED</span>`;
-            
             container.innerHTML += `<div class="flex justify-between items-center bg-[#090d16] p-3 rounded-xl border border-slate-900"><div><h4 class="font-bold text-slate-200 text-xs">${b.court_name}</h4><p class="text-[10px] text-slate-400 font-mono mt-0.5">${b.date} | ${b.time_slot}</p></div>${cancelActionBtn}</div>`;
         });
     }
@@ -342,40 +299,17 @@
         }
     }
 
-    // ⚡ FIXED 3: LIVE CLUB MATRIX DISPLAY (STRICTLY UPCOMING MATRIX / "COURT# DATE TIME PLAYER" IN DESCENDING TIME ORDER)
     function renderGlobalClubLogUI() {
         const container = document.getElementById('globalClubLogLedgerContainer'); if(!container) return;
-        container.innerHTML = "";
-        const nowIST = getNowLocalIST();
-        
-        let upcomingsOnly = userActiveBookingsLogs.map(match => {
-            return { ...match, parsedTime: parseAdminDateTime(String(match.date).trim(), String(match.time_slot).trim()) };
-        }).filter(match => match.parsedTime > nowIST);
-
-        // ⚡ Sort in strictly DESCENDING time order (furthest away show first down to closest upcoming)
+        container.innerHTML = ""; const nowIST = getNowLocalIST();
+        let upcomingsOnly = userActiveBookingsLogs.map(match => { return { ...match, parsedTime: parseAdminDateTime(String(match.date).trim(), String(match.time_slot).trim()) }; }).filter(match => match.parsedTime > nowIST);
         upcomingsOnly.sort((a, b) => b.parsedTime - a.parsedTime);
 
         if (upcomingsOnly.length === 0) { container.innerHTML = `<p class="text-xs text-slate-600 text-center py-6 font-mono">No upcoming present bookings logged.</p>`; return; }
-        
         upcomingsOnly.forEach(match => {
-            const isSportPickle = match.court_name.includes("Pickleball");
-            const sportIcon = isSportPickle ? "🏓" : "🏸";
+            const isSportPickle = match.court_name.includes("Pickleball"); const sportIcon = isSportPickle ? "🏓" : "🏸";
             const nameColorClass = match.booked_by === sessionMemberProfile?.full_name ? "text-red-400" : "text-cyan-400";
-
-            container.innerHTML += `
-              <div class="flex justify-between items-center bg-[#090d16] p-3 rounded-xl border border-slate-900/60 shadow-sm">
-                <div class="flex items-center space-x-3">
-                  <div class="text-xl bg-[#141b2d] p-1.5 rounded-lg border border-slate-800/60">${sportIcon}</div>
-                  <div>
-                    <h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-amber-500 font-mono text-[10px] ml-1">${match.date}</span></h4>
-                    <p class="text-[10px] text-slate-400 font-mono mt-0.5 font-bold">${match.time_slot}</p>
-                  </div>
-                </div>
-                <div class="text-right flex flex-col items-end">
-                  <span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block">MEMBER</span>
-                  <span class="text-xs font-black tracking-tight ${nameColorClass} mt-0.5">${match.booked_by}</span>
-                </div>
-              </div>`;
+            container.innerHTML += `<div class="flex justify-between items-center bg-[#090d16] p-3 rounded-xl border border-slate-900/60 shadow-sm"><div class="flex items-center space-x-3"><div class="text-xl bg-[#141b2d] p-1.5 rounded-lg border border-slate-800/60">${sportIcon}</div><div><h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-amber-500 font-mono text-[10px] ml-1">${match.date}</span></h4><p class="text-[10px] text-slate-400 font-mono mt-0.5 font-bold">${match.time_slot}</p></div></div><div class="text-right flex flex-col items-end"><span class="text-[8px] uppercase tracking-wider text-slate-500 font-bold block">MEMBER</span><span class="text-xs font-black tracking-tight ${nameColorClass} mt-0.5">${match.booked_by}</span></div></div>`;
         });
     }
 

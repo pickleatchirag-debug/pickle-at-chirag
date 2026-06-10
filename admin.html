@@ -45,17 +45,14 @@
 
   <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="space-y-6">
-      
       <div class="bg-[#111625] border border-slate-800/80 p-5 rounded-2xl shadow-xl space-y-3">
         <h3 class="text-xs font-black tracking-wider uppercase text-slate-400 flex items-center gap-2">📢 Notice Broadcaster</h3>
-        <p class="text-[10px] text-slate-400">Updates the streaming crawl notice ticker bar deployed across all member screens within seconds.</p>
-        <textarea id="txtAdminTickerBroadcastPayload" rows="2" placeholder="Type neighborhood operational alert text loop details here..." class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-red-500 resize-none font-medium"></textarea>
+        <textarea id="txtAdminTickerBroadcastPayload" rows="2" placeholder="Type notification ticker text loop here..." class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-red-500 resize-none font-medium"></textarea>
         <button onclick="executeGlobalTickerBroadcastUpdate()" class="w-full bg-red-500 text-slate-950 font-black py-2.5 rounded-xl text-xs uppercase tracking-widest hover:brightness-110 cursor-pointer">Broadcast Notice Message</button>
       </div>
 
       <div class="bg-[#111625] border border-slate-800/80 p-5 rounded-2xl shadow-xl space-y-3">
         <h3 class="text-xs font-black tracking-wider uppercase text-slate-400 flex items-center gap-2">🛡️ Pre-Approve Email Whitelist</h3>
-        <p class="text-[10px] text-slate-400">Pre-approve prospective player emails and map their designated joining society unit codes securely.</p>
         <div class="space-y-2.5">
           <input type="email" id="txtWhitelistEmail" placeholder="invite-resident@gmail.com" class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-slate-100 focus:outline-none focus:border-amber-500">
           <input type="text" id="txtWhitelistCode" placeholder="Assign Society Unit Code (e.g. 13103)" class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
@@ -66,22 +63,20 @@
 
       <div class="bg-[#111625] border border-slate-800/80 p-5 rounded-2xl shadow-xl space-y-3">
         <h3 class="text-xs font-black tracking-wider uppercase text-slate-400 flex items-center gap-2">💬 Send Member Message</h3>
-        <p class="text-[10px] text-slate-400">Push direct warnings, payment reminders, or alert updates directly onto a specific user's app ledger cards framework.</p>
         <div class="space-y-2.5">
           <input type="email" id="txtMsgTargetEmail" placeholder="target-player-email@gmail.com" class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-slate-100 focus:outline-none focus:border-cyan-500">
-          <textarea id="txtMsgContentPayload" rows="2" placeholder="Type personal memo message contents data text..." class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 resize-none font-medium"></textarea>
+          <textarea id="txtMsgContentPayload" rows="2" placeholder="Type personal memo message details..." class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 resize-none font-medium"></textarea>
           <button onclick="executeDirectMemberMessagingHandshake()" class="w-full bg-cyan-500 text-slate-950 font-black py-2.5 rounded-xl text-xs uppercase tracking-widest hover:brightness-110 cursor-pointer">Transmit Direct Message</button>
         </div>
       </div>
 
       <div class="bg-[#111625] border border-slate-800/80 p-5 rounded-2xl shadow-xl space-y-3">
         <h3 class="text-xs font-black tracking-wider uppercase text-slate-400 flex items-center gap-2">⚙️ Appoint Secondary Admins</h3>
-        <p class="text-[10px] text-slate-400">Appends a brand-new managing authority row directly into your Google Sheet's permanent Admin_Directory tab.</p>
         <div class="space-y-2.5">
           <input type="text" id="txtNewAdminName" placeholder="Co-Manager Full Name" class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:outline-none focus:border-red-500">
           <input type="email" id="txtNewAdminEmail" placeholder="manager-login@gmail.com" class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-slate-100 focus:outline-none focus:border-red-500">
           <input type="password" id="txtNewAdminPass" placeholder="Assign Admin Portal Security Key" class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:outline-none focus:border-red-500">
-          <button onclick="registerAdditionalAdminKey()" class="w-full border border-red-500/30 bg-red-500/10 text-red-400 font-black py-2.5 rounded-xl text-xs uppercase tracking-widest hover:bg-red-500 hover:text-slate-950 transition-all cursor-pointer">Append Admin Directory Row</button>
+          <button onclick="registerAdditionalAdminKey()" class="w-full border border-red-500/30 bg-red-500/10 text-red-400 font-black py-2.5 rounded-xl text-xs uppercase tracking-widest hover:bg-red-500 hover:text-slate-950 transition-all cursor-pointer">Append Admin Row</button>
         </div>
       </div>
     </div>
@@ -113,7 +108,7 @@
           <h3 class="text-xs font-black tracking-wider uppercase text-slate-300 flex items-center gap-2">🏓 Live Club Booking Matrix</h3>
           <div class="flex bg-[#070a12] border border-slate-900 p-1 rounded-xl text-[10px] font-black uppercase tracking-wider space-x-1">
             <button id="btnTabUpcoming" onclick="toggleMatrixDisplayTab('upcoming')" class="bg-[#111625] text-cyan-400 px-3 py-1.5 rounded-lg font-bold border border-slate-800/80">Upcoming Bookings</button>
-            <button id="btnTabHistory" onclick="toggleMatrixDisplayTab('history')" class="text-slate-500 px-3 py-1.5 rounded-lg font-bold">History Ledger Log</button>
+            <button id="btnTabHistory" onclick="toggleMatrixDisplayTab('history')" class="text-slate-500 px-3 py-1.5 rounded-lg font-bold cursor-pointer">History Ledger Log</button>
           </div>
         </div>
         <div class="overflow-x-auto max-h-[300px]">
@@ -216,15 +211,15 @@
 
     function registerAdditionalAdminKey() {
         const fullName = document.getElementById('txtNewAdminName').value.trim(); const email = document.getElementById('txtNewAdminEmail').value.toLowerCase().trim(); const password = document.getElementById('txtNewAdminPass').value.trim();
-        if(!fullName || !email || !password) return alert("Fill in all parameters fields keys.");
+        if(!fullName || !email || !password) return alert("Fill in all fields.");
         fetch('/api/admin-add-new-manager', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, email, password }) })
-        .then(r => r.json()).then(res => { if(res.status === "success") { alert(`✓ Success!`); document.getElementById('txtNewAdminName').value = ""; document.getElementById('txtNewAdminEmail').value = ""; document.getElementById('txtNewAdminPass').value = ""; processAdministrativeHandshakeSync(); } });
+        .then(r => r.json()).then(res => { if(res.status === "success") { alert(`✓ Success Admin Appended!`); document.getElementById('txtNewAdminName').value = ""; document.getElementById('txtNewAdminEmail').value = ""; document.getElementById('txtNewAdminPass').value = ""; processAdministrativeHandshakeSync(); } });
     }
 
     function executeForceSystemRelease(bookingId) {
-        if(confirm(`Execute absolute force-purge override for Booking ID: ${bookingId}?`)) {
+        if(confirm(`Execute force-cancel override for Booking ID: ${bookingId}?`)) {
             fetch('/api/admin-force-cancel-booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId }) })
-            .then(r => r.json()).then(res => { if(res.status === "success") { alert("✓ Match entry row successfully cleared."); processAdministrativeHandshakeSync(); } });
+            .then(r => r.json()).then(res => { if(res.status === "success") { alert("✓ Booking successfully canceled."); processAdministrativeHandshakeSync(); } });
         }
     }
 
