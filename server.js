@@ -25,6 +25,8 @@ app.get('/api/test-login', async (req, res) => {
 try {
 
 ```
+const { default: fetch } = await import('node-fetch');
+
 const response = await fetch(APPS_SCRIPT_URL, {
   method: 'POST',
   headers: {
@@ -37,14 +39,16 @@ const response = await fetch(APPS_SCRIPT_URL, {
   })
 });
 
-const data = await response.json();
+const text = await response.text();
 
-res.json(data);
+res.status(response.status).send(text);
 ```
 
-} catch(err) {
+} catch (err) {
 
 ```
+console.error(err);
+
 res.status(500).json({
   success: false,
   error: err.toString()
@@ -53,6 +57,13 @@ res.status(500).json({
 
 }
 
+});
+
+app.get('/api/debug', (req, res) => {
+res.json({
+nodeVersion: process.version,
+hasFetch: typeof fetch !== 'undefined'
+});
 });
 
 app.get('*', (req, res) => {
