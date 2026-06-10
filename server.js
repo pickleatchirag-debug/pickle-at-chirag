@@ -47,7 +47,39 @@ app.get('/api/check-session', (req, res) => {
     if (!userMatch) return res.json({ status: "unauthorized" });
     res.json({ status: "authorized", user: userMatch, ticker: customGlobalTickerMemory });
 });
+// 📊 READ ENDPOINT: Serves data directly to your original style UI
+app.get('/api/admin-fetch-dashboard-snapshot', (req, res) => {
+    res.json({
+        users: masterCachedUsersRegistry || [],
+        bookings: masterCachedBookingsRegistry || [],
+        whitelisted: masterCachedWhitelistRegistry || []
+    });
+});
 
+// 🔒 WRITE ENDPOINT: Ships new bookings or cancellations straight to your Google Web App
+app.post('/api/admin-post-action-dispatch', async (req, res) => {
+    try {
+        const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
+        
+        const response = await fetch(GOOGLE_SHEETS_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+        
+        const data = await response.json();
+        
+        // Force an immediate server-side cache update so the user sees the changes instantly
+        if (data.status === 'success') {
+            await syncDatabaseFromGoogleSheets();
+        }
+        
+        res.json(data);
+    } catch (error) {
+        console.error("Error sending update to sheet pipeline:", error);
+        res.status(500).json({ status: "error", message: "Operational pipeline timeout. Direct row entry dropped." });
+    }
+});
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
     const cleanEmail = email.toLowerCase().trim();
