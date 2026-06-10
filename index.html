@@ -17,7 +17,10 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
             <div>
                 <h1 class="text-2xl font-extrabold text-white tracking-tight" id="welcomeHeading">Chirag Sports Portal</h1>
-                <p class="text-xs text-slate-400 mt-1">Manage active court bookings seamlessly.</p>
+                <p class="text-xs text-slate-400 mt-1">
+                    Manage active court bookings seamlessly. 
+                    <a href="#" onclick="executeLogoutSequence()" class="text-red-400 hover:underline font-bold ml-2 text-[11px] uppercase tracking-wider">Disconnect</a>
+                </p>
             </div>
             <div class="bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-3">
                 <div class="text-right">
@@ -93,7 +96,7 @@
     </div>
 
     <script>
-        // Static user profile session data match logic link
+        // Static user profile session context alignment profile details
         const activeSessionUserContext = { fullName: "rahul babbar", email: "rahulbabbar@msn.com" };
 
         let serverDatabaseCacheSnapshot = { users: [], bookings: [] };
@@ -107,7 +110,7 @@
                 .then(snapshot => {
                     serverDatabaseCacheSnapshot = snapshot;
                     
-                    // Update user available token values dynamically
+                    // Update user available token trackers dynamically
                     const selfProfile = snapshot.users.find(u => u.google_email.toLowerCase() === activeSessionUserContext.email.toLowerCase());
                     if(selfProfile) {
                         document.getElementById('tokenBalanceDisplay').innerText = selfProfile.available_tokens;
@@ -116,10 +119,10 @@
                     renderTimelineMatrixCells();
                     renderLedgerDisplays();
                 })
-                .catch(err => console.log("Database snap load connection dropped."));
+                .catch(err => console.log("Database data sync loop timed out or blocked."));
         }
 
-        // Initialize 3-day calendar tabs
+        // Initialize 3-day calendar strips
         function buildCalendarTabs() {
             const container = document.getElementById('calendarDateStrip');
             container.innerHTML = "";
@@ -181,6 +184,30 @@
             renderTimelineMatrixCells();
         }
 
+        // 🎯 BULLETPROOF NAME INTERACTION ENGINE MAPS ACROSS ALL COMBINATIONS
+        function isCourtMatch(loggedName, selectedName) {
+            if (!loggedName || !selectedName) return false;
+            
+            let logged = loggedName.toLowerCase().trim();
+            let selected = selectedName.toLowerCase().trim();
+            
+            // Standardize strings to clean alphanumeric variables
+            let n1 = logged.replace(/[^a-z0-9]/g, '');
+            let n2 = selected.replace(/[^a-z0-9]/g, '');
+            
+            // Bridge shorthand acronym mapping elements completely
+            if (n1.startsWith('pb')) n1 = n1.replace('pb', 'pickleball');
+            if (n2.startsWith('pb')) n2 = n2.replace('pb', 'pickleball');
+            if (n1.startsWith('bd')) n1 = n1.replace('bd', 'badminton');
+            if (n2.startsWith('bd')) n2 = n2.replace('bd', 'badminton');
+            
+            // Catch raw generic layout definitions fallback safely
+            if (n1 === "pickleballcourt") n1 = "pickleballcourt1";
+            if (n2 === "pickleballcourt") n2 = "pickleballcourt1";
+
+            return n1 === n2;
+        }
+
         function renderTimelineMatrixCells() {
             const deck = document.getElementById('timingGridMatrixDeck');
             deck.innerHTML = "";
@@ -196,7 +223,7 @@
                 const checkReserved = serverDatabaseCacheSnapshot.bookings.find(b => {
                     const dateClean = String(b.date).split('T')[0].trim();
                     return dateClean === activeSelectedChronoDate && 
-                           String(b.court_name).trim().toLowerCase() === activeSelectedAsset.trim().toLowerCase() && 
+                           isCourtMatch(b.court_name, activeSelectedAsset) && 
                            String(b.time_slot).trim() === slot;
                 });
 
@@ -247,11 +274,11 @@
                 timeSlot: activeSelectedTimeSlot
             };
 
-            // ⚡ CONNECTED DIRECTLY TO YOUR REAL TIME SERVER ENDPOINT ROUTE
-            fetch('/api/bookings', {
+            // Targets unified proxy route dispatch cleanly
+            fetch('/api/admin-post-action-dispatch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(submissionPayload)
+                body: JSON.stringify({ action: "secureBooking", ...submissionPayload })
             })
             .then(res => res.json())
             .then(data => {
@@ -269,15 +296,24 @@
         function executeReleasePipeline(bookingId) {
             if(!confirm("Are you sure you want to release this reservation frame?")) return;
 
-            fetch(`/api/bookings/${bookingId}`, { method: 'DELETE' })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.status === 'success') {
-                        alert("✓ Booking released cleanly.");
-                        syncPortalDatabaseState();
-                    }
-                })
-                .catch(err => alert("Failed to transmit structural row update."));
+            fetch('/api/admin-post-action-dispatch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: "removeBooking", bookingId: bookingId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    alert("✓ Booking released cleanly.");
+                    syncPortalDatabaseState();
+                }
+            })
+            .catch(err => alert("Failed to transmit structural row update."));
+        }
+
+        function executeLogoutSequence() {
+            fetch('/api/logout', { method: 'POST' })
+                .then(() => { window.location.reload(); });
         }
 
         function renderLedgerDisplays() {
