@@ -8,6 +8,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// ⚡ PASTE YOUR NEWLY GENERATED GOOGLE MACRO SCRIPT WEB APP URL DIRECTLY IN THE LINE BELOW:
 const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxbiHJTFD4f7OmCoG8AfpV79IkEoqVZ8WWEUJ0PuIs40VWB41rDRyjnVzb5Zb7BUHkyJQ/exec";
 
 let masterCachedUsersRegistry = [];
@@ -26,13 +27,24 @@ async function syncDatabaseFromGoogleSheets() {
         if (data.admins) masterCachedAdminsRegistry = data.admins;
         if (data.whitelistedEmails) masterCachedWhitelistRegistry = data.whitelistedEmails;
     } catch (e) {
-        console.log("Sync warning loop:", e);
+        console.log("Sync loop ping hold exception:", e);
     }
 }
 setInterval(syncDatabaseFromGoogleSheets, 6000);
 syncDatabaseFromGoogleSheets();
 
-// AUTHENTICATION PATHS
+app.post('/api/gate-verify-whitelist', (req, res) => {
+    const { email } = req.body;
+    if(!email) return res.json({ status: "error", message: "Missing query parameter values tokens." });
+    const cleanEmail = email.toLowerCase().trim();
+    const matchFound = masterCachedWhitelistRegistry.find(w => w.email.toLowerCase().trim() === cleanEmail);
+    if (matchFound) {
+        res.json({ status: "success", code: matchFound.code });
+    } else {
+        res.json({ status: "error", message: "This email address row is not currently pre-approved on the system invite whitelist grid canvas." });
+    }
+});
+
 app.post('/api/admin-login', (req, res) => {
     const { email, password } = req.body;
     const cleanEmail = email.toLowerCase().trim();
@@ -41,29 +53,21 @@ app.post('/api/admin-login', (req, res) => {
     else res.json({ status: "error", message: "Invalid Administration Access credentials." });
 });
 
-// 🔥 NEW ENDPOINT: COMMIT INBOUND EMAIL WHITELISTING
 app.post('/api/admin-add-whitelist', async (req, res) => {
     const { email, code } = req.body;
     try {
         const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        await fetch(GOOGLE_SHEETS_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: "addWhitelistRow", email, code })
-        });
+        await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', body: JSON.stringify({ action: "addWhitelistRow", email, code }) });
         setTimeout(syncDatabaseFromGoogleSheets, 1200);
         res.json({ status: "success" });
     } catch (e) { res.json({ status: "error" }); }
 });
 
-// 🔥 NEW ENDPOINT: SEND MESSAGE TO TARGET PLAYER
 app.post('/api/admin-send-member-message', async (req, res) => {
     const { email, message } = req.body;
     try {
         const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        await fetch(GOOGLE_SHEETS_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: "addMemberMessageRow", email, message })
-        });
+        await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', body: JSON.stringify({ action: "addMemberMessageRow", email, message }) });
         res.json({ status: "success" });
     } catch (e) { res.json({ status: "error" }); }
 });
@@ -109,9 +113,10 @@ app.post('/api/admin-force-cancel-booking', async (req, res) => {
     } catch (e) { res.json({ status: "error" }); }
 });
 
-app.post('/api/admin-fetch-dashboard-snapshot', (req, res) => { 
-    res.json({ users: masterCachedUsersRegistry, bookings: masterCachedBookingsRegistry, whitelisted: masterCachedWhitelistRegistry }); 
-});
+app.post('/api/admin-fetch-dashboard-snapshot', (req, res) => { res.json({ users: masterCachedUsersRegistry, bookings: masterCachedBookingsRegistry, whitelisted: masterCachedWhitelistRegistry }); });
 app.post('/api/fetch-logs', (req, res) => { res.json({ records: masterCachedBookingsRegistry }); });
+
+app.get('/gate', (req, res) => { res.sendFile(path.join(__dirname, 'gate.html')); });
 app.get('*', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
-app.listen(PORT, () => { console.log(`🚀 CORE ENGINE PORT BOUND ON ${PORT}`); });
+
+app.listen(PORT, () => { console.log(`🚀 CORE MATRIX SYSTEM ACTIVE ON PORT BOUND ${PORT}`); });
