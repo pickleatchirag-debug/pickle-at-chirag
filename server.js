@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 // ⚡ PASTE YOUR NEWLY GENERATED GOOGLE MACRO SCRIPT WEB APP URL DIRECTLY IN THE LINE BELOW:
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxbiHJTFD4f7OmCoG8AfpV79IkEoqVZ8WWEUJ0PuIs40VWB41rDRyjnVzb5Zb7BUHkyJQ/exec";
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/library/d/1LC7NSYtU__c9WHwx4r6QAu-Ua3t6rxzZ96U8a8J2Hjz66V4YGhG3Vdtk/12";
 
 let masterCachedUsersRegistry = [];
 let masterCachedBookingsRegistry = [];
