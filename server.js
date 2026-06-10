@@ -8,8 +8,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ⚡ PASTE YOUR NEWLY GENERATED GOOGLE MACRO SCRIPT WEB APP URL DIRECTLY IN THE LINE BELOW:
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/library/d/1LC7NSYtU__c9WHwx4r6QAu-Ua3t6rxzZ96U8a8J2Hjz66V4YGhG3Vdtk/12";
+// ⚡ PASTE YOUR REFRESHED GOOGLE MACRO SCRIPT WEB APP URL DIRECTLY BELOW:
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxbiHJTFD4f7OmCoG8AfpV79IkEoqVZ8WWEUJ0PuIs40VWB41rDRyjnVzb5Zb7BUHkyJQ/exec";
 
 let masterCachedUsersRegistry = [];
 let masterCachedBookingsRegistry = [];
@@ -27,7 +27,7 @@ async function syncDatabaseFromGoogleSheets() {
         if (data.admins) masterCachedAdminsRegistry = data.admins;
         if (data.whitelistedEmails) masterCachedWhitelistRegistry = data.whitelistedEmails;
     } catch (e) {
-        console.log("Sync loop ping hold exception:", e);
+        console.log("Sync core hold trace exception:", e);
     }
 }
 setInterval(syncDatabaseFromGoogleSheets, 6000);
@@ -35,13 +35,13 @@ syncDatabaseFromGoogleSheets();
 
 app.post('/api/gate-verify-whitelist', (req, res) => {
     const { email } = req.body;
-    if(!email) return res.json({ status: "error", message: "Missing query parameter values tokens." });
+    if(!email) return res.json({ status: "error", message: "Missing token parameter value." });
     const cleanEmail = email.toLowerCase().trim();
     const matchFound = masterCachedWhitelistRegistry.find(w => w.email.toLowerCase().trim() === cleanEmail);
     if (matchFound) {
         res.json({ status: "success", code: matchFound.code });
     } else {
-        res.json({ status: "error", message: "This email address row is not currently pre-approved on the system invite whitelist grid canvas." });
+        res.json({ status: "error", message: "This email address row is not currently approved." });
     }
 });
 
@@ -91,13 +91,26 @@ app.post('/api/register', async (req, res) => {
     } catch(e) { res.json({ status: "error", message: "Write failed." }); }
 });
 
+// 🔥 CORE FIX: FORMAT INBOUND STRINGS SECURELY
 app.post('/api/secure-booking', async (req, res) => {
     const { courtName, sportType, userName, date, timeSlot } = req.body;
     const bId = "BK-" + Math.floor(1000 + Math.random() * 9000);
     try {
         const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "secureBooking", bookingId: bId, courtName, sportType, userName, date, timeSlot }) });
-        setTimeout(syncDatabaseFromGoogleSheets, 1000);
+        await fetch(GOOGLE_SHEETS_API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                action: "secureBooking", 
+                bookingId: bId, 
+                courtName: String(courtName).trim(), 
+                sportType: String(sportType).trim(), 
+                userName: String(userName).trim(), 
+                date: String(date).trim(), 
+                timeSlot: String(timeSlot).trim() 
+            }) 
+        });
+        setTimeout(syncDatabaseFromGoogleSheets, 1100);
         res.json({ status: "success" });
     } catch(e) { res.json({ status: "error" }); }
 });
