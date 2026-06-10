@@ -1,54 +1,127 @@
 const express = require('express');
-const cors = require('cors');
-const path = require('path');
 const cookieParser = require('cookie-parser');
+const path = require('path');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// 🎯 REPLACE THIS WITH YOUR ACTIVE GOOGLE WEB APP DEPLOYMENT URL STRING FROM POINT A
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycby_elXPrUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvD0eS/exec";
+
 app.use(express.json());
-app.use(cookieParser()); // ⚡ Allows the server to seamlessly read secure login cookies
-app.use(express.static(__dirname));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ⚡ MASTER SPREADSHEET DISPATCH LINK
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
-
+// Master Background Database Memory Cache Registries
 let masterCachedUsersRegistry = [];
 let masterCachedBookingsRegistry = [];
-let masterCachedAdminsRegistry = [];
 let masterCachedWhitelistRegistry = [];
-let customGlobalTickerMemory = "Welcome to the Pickle at Chirag Portal! Manage your active bookings seamlessly.";
 
+// 🔄 1. BACKGROUND MEMORY SYNCHRONIZATION LEDGER PIPE
 async function syncDatabaseFromGoogleSheets() {
     try {
-        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        const response = await fetch(GOOGLE_SHEETS_API_URL + "?action=getSnapshot");
+        const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
+        const response = await fetch(`${GOOGLE_SHEETS_API_URL}?action=getSnapshot`);
+        
+        if (!response.ok) throw new Error(`HTTP network error wrapper alert: ${response.status}`);
         const data = await response.json();
+        
         if (data.users) masterCachedUsersRegistry = data.users;
         if (data.bookings) masterCachedBookingsRegistry = data.bookings;
-        if (data.admins) masterCachedAdminsRegistry = data.admins;
-        if (data.whitelistedEmails) masterCachedWhitelistRegistry = data.whitelistedEmails;
+        if (data.whitelisted) masterCachedWhitelistRegistry = data.whitelisted;
+        
+        console.log(`⚡ System cache updated smoothly. Sync metrics: [Users: ${masterCachedUsersRegistry.length} | Bookings: ${masterCachedBookingsRegistry.length}]`);
     } catch (e) {
-        console.log("Sync background token pipeline notice exception:", e);
+        console.error("Sync background token pipeline notice exception:", e.message);
     }
 }
-setInterval(syncDatabaseFromGoogleSheets, 5000);
+
+// Spin data poll cycle routine intervals every 8 seconds
+setInterval(syncDatabaseFromGoogleSheets, 8000);
 syncDatabaseFromGoogleSheets();
 
-// ⚡ SECURE COOKIE SESSION STATUS VERIFIER TERMINAL
+// 🔑 2. SECURE LOGOUT VECTOR ROUTE
+app.post('/api/logout', (req, res) => {
+    res.clearCookie('chirag_secure_token');
+    res.json({ status: "success", message: "Session token released cleanly." });
+});
+
+// 🔑 3. DYNAMIC MULTI-USER SESSION STATUS CHECKER
 app.get('/api/check-session', (req, res) => {
     const sessionCookie = req.cookies.chirag_secure_token;
-    if (!sessionCookie) return res.json({ status: "unauthorized" });
+    if (!sessionCookie) {
+        return res.status(401).json({ status: "unauthorized", message: "Identity proxy vacant." });
+    }
 
-    // Decodes our isolated hardware string parameters safely
-    const userEmail = Buffer.from(sessionCookie, 'base64').toString('ascii');
-    const userMatch = masterCachedUsersRegistry.find(u => u.google_email.toLowerCase().trim() === userEmail.toLowerCase().trim());
-    
-    if (!userMatch) return res.json({ status: "unauthorized" });
-    res.json({ status: "authorized", user: userMatch, ticker: customGlobalTickerMemory });
+    try {
+        // Decodes cookie signature parameters directly
+        const decodedEmail = Buffer.from(sessionCookie, 'base64').toString('ascii').toLowerCase().trim();
+        const userMatch = masterCachedUsersRegistry.find(u => u.google_email.toLowerCase().trim() === decodedEmail);
+
+        if (!userMatch) {
+            res.clearCookie('chirag_secure_token');
+            return res.status(401).json({ status: "unauthorized", message: "User profile record not found." });
+        }
+
+        res.json({
+            status: "authorized",
+            user: {
+                fullName: userMatch.full_name,
+                email: userMatch.google_email,
+                tokensBalance: userMatch.available_tokens ?? 3
+            }
+        });
+    } catch (err) {
+        res.status(401).json({ status: "unauthorized", message: "Session token parsing fault." });
+    }
 });
-// 📊 READ ENDPOINT: Serves data directly to your original style UI
+
+// 🔑 4. SECURE MEMBER ACCOUNT LOGIN VALIDATION HANDSHAKE
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ status: "error", message: "Required parameter validation failed." });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const inputPassword = String(password).trim();
+
+    const userMatch = masterCachedUsersRegistry.find(u => {
+        const emailMatches = u.google_email.toLowerCase().trim() === cleanEmail;
+        const sheetPassword = String(u.password || "").trim();
+        return emailMatches && sheetPassword === inputPassword;
+    });
+
+    if (!userMatch) {
+        return res.status(401).json({ status: "error", message: "Invalid resident credentials or missing account token." });
+    }
+
+    // Set secure base64 state cookie session keys
+    const sessionCookieString = Buffer.from(cleanEmail).toString('base64');
+    res.cookie('chirag_secure_token', sessionCookieString, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // Stable 7-day expiration lifespan
+    });
+
+    res.json({
+        status: "success",
+        user: {
+            fullName: userMatch.full_name,
+            email: userMatch.google_email,
+            tokensBalance: userMatch.available_tokens ?? 3
+        }
+    });
+});
+
+// 📊 5. SECURE REAL-TIME DATABASE SNAPSHOT DISPATCH
 app.get('/api/admin-fetch-dashboard-snapshot', (req, res) => {
+    const sessionCookie = req.cookies.chirag_secure_token;
+    if (!sessionCookie) {
+        return res.status(401).json({ status: "unauthorized", message: "Access locked." });
+    }
+    
     res.json({
         users: masterCachedUsersRegistry || [],
         bookings: masterCachedBookingsRegistry || [],
@@ -56,11 +129,15 @@ app.get('/api/admin-fetch-dashboard-snapshot', (req, res) => {
     });
 });
 
-// 🔒 WRITE ENDPOINT: Ships new bookings or cancellations straight to your Google Web App
+// 🔒 6. WRITE BACK TRANSACTION PROXIES TO GOOGLE SCRIPT APPS WIDGETS
 app.post('/api/admin-post-action-dispatch', async (req, res) => {
+    const sessionCookie = req.cookies.chirag_secure_token;
+    if (!sessionCookie) {
+        return res.status(401).json({ status: "unauthorized", message: "Transaction sign block." });
+    }
+
     try {
         const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
-        
         const response = await fetch(GOOGLE_SHEETS_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -68,140 +145,21 @@ app.post('/api/admin-post-action-dispatch', async (req, res) => {
         });
         
         const data = await response.json();
-        
-        // Force an immediate server-side cache update so the user sees the changes instantly
         if (data.status === 'success') {
-            await syncDatabaseFromGoogleSheets();
+            await syncDatabaseFromGoogleSheets(); // Force synchronization instant updates
         }
-        
         res.json(data);
     } catch (error) {
-        console.error("Error sending update to sheet pipeline:", error);
+        console.error("Write proxy submission fatal transaction exception:", error);
         res.status(500).json({ status: "error", message: "Operational pipeline timeout. Direct row entry dropped." });
     }
 });
-app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
-    const cleanEmail = email.toLowerCase().trim();
-    const userMatch = masterCachedUsersRegistry.find(u => u.google_email.toLowerCase().trim() === cleanEmail && String(u.password).trim() === String(password).trim());
-    
-    if (!userMatch) return res.json({ status: "error", message: "Invalid credentials." });
-    
-    // Creates an absolute secure token key value signature row tracking link
-    const tokenSignature = Buffer.from(cleanEmail).toString('base64');
-    
-    // Drops a secure, permanent hardware cookie set to auto-renew for 365 days straight
-    res.cookie('chirag_secure_token', tokenSignature, {
-        maxAge: 365 * 24 * 60 * 60 * 1000, // 1 Full Year in milliseconds
-        httpOnly: true,                    // Completely protects token from frontend script extraction exploits
-        secure: true,                      // Guarantees token travels inside SSL encrypted network pipes
-        sameSite: 'strict'
-    });
 
-    res.json({ status: "success", user: userMatch, activeTokens: userMatch.available_tokens ?? 2, ticker: customGlobalTickerMemory });
+// Serve frontend mapping layout routes cleanly
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/api/admin-login', (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) return res.json({ status: "error", message: "Missing administrative inputs data parameters." });
-    const cleanEmail = email.toLowerCase().trim();
-    const adminMatch = masterCachedAdminsRegistry.find(a => a.email === cleanEmail && String(a.password).trim() === String(password).trim());
-    
-    if (adminMatch) {
-        res.cookie('chirag_admin_token', Buffer.from(cleanEmail).toString('base64'), { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, secure: true, sameSite: 'strict' });
-        res.json({ status: "success" });
-    } else {
-        res.json({ status: "error", message: "Security Gate Refusal: Invalid Credentials." });
-    }
+app.listen(PORT, () => {
+    console.log(`🚀 Chirag Core Gateway Engine standing operational live on port channel: ${PORT}`);
 });
-
-app.get('/api/admin-check-session', (req, res) => {
-    if (req.cookies.chirag_admin_token) res.json({ status: "authorized" });
-    else res.json({ status: "unauthorized" });
-});
-
-app.post('/api/logout', (req, res) => {
-    res.clearCookie('chirag_secure_token');
-    res.clearCookie('chirag_admin_token');
-    res.json({ status: "success" });
-});
-
-app.post('/api/gate-verify-whitelist', (req, res) => {
-    const { email } = req.body;
-    if(!email) return res.json({ status: "error", message: "Missing parameter tokens." });
-    const cleanEmail = email.toLowerCase().trim();
-    const matchFound = masterCachedWhitelistRegistry.find(w => w.email.toLowerCase().trim() === cleanEmail);
-    if (matchFound) res.json({ status: "success", code: matchFound.code });
-    else res.json({ status: "error", message: "This email address is not currently whitelisted." });
-});
-
-app.post('/api/admin-add-whitelist', async (req, res) => {
-    const { email, code } = req.body;
-    try {
-        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', body: JSON.stringify({ action: "addWhitelistRow", email, code }) });
-        setTimeout(syncDatabaseFromGoogleSheets, 1200);
-        res.json({ status: "success" });
-    } catch (e) { res.json({ status: "error" }); }
-});
-
-app.post('/api/admin-send-member-message', async (req, res) => {
-    const { email, message } = req.body;
-    try {
-        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', body: JSON.stringify({ action: "addMemberMessageRow", email, message }) });
-        res.json({ status: "success" });
-    } catch (e) { res.json({ status: "error" }); }
-});
-
-app.post('/api/register', async (req, res) => {
-    const { email, fullName, registrationCode, password } = req.body;
-    try {
-        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        const response = await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "addRegistration", email, fullName, registrationCode, password }) });
-        const result = await response.json();
-        if (result.status === "success") { setTimeout(syncDatabaseFromGoogleSheets, 1000); res.json({ status: "success" }); } 
-        else { res.json({ status: "error", message: result.message }); }
-    } catch(e) { res.json({ status: "error", message: "Write failed." }); }
-});
-
-app.post('/api/secure-booking', async (req, res) => {
-    const { courtName, sportType, userName, date, timeSlot } = req.body;
-    const bId = "BK-" + Math.floor(1000 + Math.random() * 9000);
-    try {
-        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "secureBooking", bookingId: bId, courtName, sportType, userName, date, timeSlot }) });
-        setTimeout(syncDatabaseFromGoogleSheets, 1000);
-        res.json({ status: "success" });
-    } catch(e) { res.json({ status: "error" }); }
-});
-
-app.post('/api/admin-update-ticker', (req, res) => { customGlobalTickerMemory = req.body.tickerText; res.json({ status: "success" }); });
-app.post('/api/admin-force-cancel-booking', async (req, res) => {
-    const { bookingId } = req.body;
-    try {
-        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "removeBooking", bookingId }) });
-        setTimeout(syncDatabaseFromGoogleSheets, 1000);
-        res.json({ status: "success" });
-    } catch (e) { res.json({ status: "error" }); }
-});
-
-app.post('/api/admin-add-new-manager', async (req, res) => {
-    const { email, fullName, password } = req.body;
-    try {
-        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-        const response = await fetch(GOOGLE_SHEETS_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "addAdminRow", fullName, email, password }) });
-        const result = await response.json();
-        if(result.status === "success") { setTimeout(syncDatabaseFromGoogleSheets, 1200); res.json({ status: "success" }); } 
-        else { res.json({ status: "error" }); }
-    } catch(e) { res.json({ status: "error" }); }
-});
-
-app.post('/api/admin-fetch-dashboard-snapshot', (req, res) => { res.json({ users: masterCachedUsersRegistry, bookings: masterCachedBookingsRegistry, whitelisted: masterCachedWhitelistRegistry }); });
-app.post('/api/fetch-logs', (req, res) => { res.json({ records: masterCachedBookingsRegistry }); });
-
-app.get('/gate', (req, res) => { res.sendFile(path.join(__dirname, 'gate.html')); });
-app.get('*', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
-
-app.listen(PORT, () => { console.log(`🚀 SECURE PERSISTENT KERNEL LINK ACTIVE ON PORT BOUND ${PORT}`); });
