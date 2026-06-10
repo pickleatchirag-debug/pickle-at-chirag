@@ -1,13 +1,14 @@
 {
   "name": "pickle-at-chirag",
   "version": "1.0.0",
-  "description": "Chirag Sports Club Core Matrix Booking Platform",
+  "description": "Chirag Sports Club Core Matrix Booking Platform with Secure Sessions",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "cookie-parser": "^1.4.6",
     "express": "^4.19.2",
     "node-fetch": "^3.3.2"
   },
