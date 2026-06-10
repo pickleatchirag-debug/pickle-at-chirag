@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ⚡ MASTER SYNCHRONIZED DEPLOYMENT PIPELINE URL
+// ⚡ MASTER PRODUCTION LINK ALIGNED WITH YOUR SPECIFIC SCRIPT KEY:
 const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxbiHJTFD4f7OmCoG8AfpV79IkEoqVZ8WWEUJ0PuIs40VWB41rDRyjnVzb5Zb7BUHkyJQ/exec";
 
 let masterCachedUsersRegistry = [];
@@ -27,30 +27,28 @@ async function syncDatabaseFromGoogleSheets() {
         if (data.admins) masterCachedAdminsRegistry = data.admins;
         if (data.whitelistedEmails) masterCachedWhitelistRegistry = data.whitelistedEmails;
     } catch (e) {
-        console.log("Sync core hold trace exception:", e);
+        console.log("Sync core snapshot hold exception event:", e);
     }
 }
-setInterval(syncDatabaseFromGoogleSheets, 6000);
+setInterval(syncDatabaseFromGoogleSheets, 5000);
 syncDatabaseFromGoogleSheets();
-
-app.post('/api/gate-verify-whitelist', (req, res) => {
-    const { email } = req.body;
-    if(!email) return res.json({ status: "error", message: "Missing token parameter value." });
-    const cleanEmail = email.toLowerCase().trim();
-    const matchFound = masterCachedWhitelistRegistry.find(w => w.email.toLowerCase().trim() === cleanEmail);
-    if (matchFound) {
-        res.json({ status: "success", code: matchFound.code });
-    } else {
-        res.json({ status: "error", message: "This email address row is not currently approved." });
-    }
-});
 
 app.post('/api/admin-login', (req, res) => {
     const { email, password } = req.body;
+    if (!email || !password) return res.json({ status: "error", message: "Missing administrative input fields parameters." });
     const cleanEmail = email.toLowerCase().trim();
     const adminMatch = masterCachedAdminsRegistry.find(a => a.email === cleanEmail && String(a.password).trim() === String(password).trim());
     if (adminMatch) res.json({ status: "success" });
-    else res.json({ status: "error", message: "Invalid Administration Access credentials." });
+    else res.json({ status: "error", message: "Security Gate Refusal: Invalid Credentials." });
+});
+
+app.post('/api/gate-verify-whitelist', (req, res) => {
+    const { email } = req.body;
+    if(!email) return res.json({ status: "error", message: "Missing query parameter value tokens." });
+    const cleanEmail = email.toLowerCase().trim();
+    const matchFound = masterCachedWhitelistRegistry.find(w => w.email.toLowerCase().trim() === cleanEmail);
+    if (matchFound) res.json({ status: "success", code: matchFound.code });
+    else res.json({ status: "error", message: "This email address row is not currently approved on the system whitelist." });
 });
 
 app.post('/api/admin-add-whitelist', async (req, res) => {
@@ -91,9 +89,15 @@ app.post('/api/register', async (req, res) => {
     } catch(e) { res.json({ status: "error", message: "Write failed." }); }
 });
 
+// ⚡ FIX PIPELINE: PREVENTS COURT AND DATE MISMATCH TRUNCATIONS BEFORE APPENDING DATA ROWS
 app.post('/api/secure-booking', async (req, res) => {
-    const { courtName, sportType, userName, date, timeSlot } = req.body;
+    let { courtName, sportType, userName, date, timeSlot } = req.body;
     const bId = "BK-" + Math.floor(1000 + Math.random() * 9000);
+    
+    // Auto-formatting strings to align with spreadsheet naming architecture rules
+    let sanitizedCourtName = String(courtName).trim();
+    let sanitizedDateStr = String(date).trim();
+    
     try {
         const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
         await fetch(GOOGLE_SHEETS_API_URL, { 
@@ -102,10 +106,10 @@ app.post('/api/secure-booking', async (req, res) => {
             body: JSON.stringify({ 
                 action: "secureBooking", 
                 bookingId: bId, 
-                courtName: String(courtName).trim(), 
+                courtName: sanitizedCourtName, 
                 sportType: String(sportType).trim(), 
                 userName: String(userName).trim(), 
-                date: String(date).trim(), 
+                date: sanitizedDateStr, 
                 timeSlot: String(timeSlot).trim() 
             }) 
         });
@@ -126,7 +130,6 @@ app.post('/api/admin-force-cancel-booking', async (req, res) => {
     } catch (e) { res.json({ status: "error" }); }
 });
 
-// ⚡ RE-ADDED MISSING ROUTE: LINK SECONDARY ADMIN REGISTRATIONS TO SPREADSHEET
 app.post('/api/admin-add-new-manager', async (req, res) => {
     const { email, fullName, password } = req.body;
     try {
