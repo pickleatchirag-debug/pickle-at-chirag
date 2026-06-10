@@ -4,211 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chirag Sports Portal</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0d1527">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            background-color: #0b0f19;
-        }
-        .cyber-heading {
-            font-family: 'Orbitron', sans-serif;
-            letter-spacing: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #0d1527;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #f97316;
-            border-radius: 3px;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
+        body { font-family: 'Montserrat', sans-serif; background-color: #0b111e; }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen custom-scrollbar selection:bg-orange-500 selection:text-white pb-12">
+<body class="text-slate-200 min-h-screen p-4 md:p-8">
 
-    <div class="w-full h-1.5 bg-gradient-to-r from-orange-600 via-yellow-500 to-cyan-500 shadow-[0_0_15px_rgba(249,115,22,0.5)]"></div>
-
-    <div class="w-full bg-[#0d1527] border-b border-slate-800/60 py-2.5 overflow-hidden shadow-inner">
-        <div class="max-w-7xl mx-auto px-4 flex items-center gap-4 text-sm font-semibold tracking-wide">
-            <span class="bg-red-500/10 text-red-400 border border-red-500/30 text-[11px] px-2 py-0.5 rounded-sm uppercase tracking-widest cyber-heading shadow-[0_0_8px_rgba(239,68,68,0.2)]">Notice</span>
-            <div class="w-full overflow-hidden relative">
-                <p id="uiGlobalTickerElement" class="whitespace-nowrap animate-[marquee_25s_linear_infinite] inline-block text-slate-400">
-                    Synchronizing live network ledger matrices...
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <div id="authGatewayContainer" class="max-w-md mx-auto mt-16 px-4">
-        <div id="pwaInstallationPromptCard" class="hidden mb-6 bg-gradient-to-r from-slate-900 via-[#0d1527] to-slate-900 border border-slate-800 rounded-xl p-4 shadow-2xl flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">📱</span>
-                <div>
-                    <h4 class="text-sm font-bold text-slate-200 cyber-heading tracking-wide text-cyan-400 uppercase text-[11px]">CHIRAG SPORTS APP</h4>
-                    <p class="text-xs text-slate-400">Install onto your mobile home screen.</p>
-                </div>
-            </div>
-            <button onclick="executeNativePwaInstallation()" class="bg-cyan-500 text-slate-950 font-bold text-xs px-4 py-2 rounded-lg hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_12px_rgba(6,182,212,0.4)] cyber-heading tracking-wider">DOWNLOAD</button>
-        </div>
-
-        <div class="bg-gradient-to-b from-slate-900 to-[#0d1527] border border-slate-800 rounded-2xl p-8 shadow-[0_0_40px_rgba(0,0,0,0.7)] relative overflow-hidden">
-            <div class="absolute -right-16 -top-16 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="absolute -left-16 -bottom-16 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
-            
-            <div id="loginStatePanelView">
-                <div class="text-center mb-8">
-                    <p class="text-orange-500 font-bold uppercase tracking-widest text-xs cyber-heading">Welcome Back</p>
-                    <h2 class="text-2xl font-black text-white tracking-tight mt-1 shadow-sm">Log Into Resident Portal</h2>
-                </div>
-                <form onsubmit="executeMemberLoginHandshake(event)" class="space-y-5">
-                    <div>
-                        <label class="block text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-2 cyber-heading">Google Email Address</label>
-                        <input type="email" id="loginEmailInputField" required placeholder="name@gmail.com" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-sm font-medium">
-                    </div>
-                    <div>
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="block text-[11px] uppercase tracking-widest text-slate-400 font-bold cyber-heading">Personal Password Key</label>
-                            <a href="#" onclick="alert('Please contact admin desk management to securely reset your credentials.')" class="text-[11px] text-orange-400 hover:underline font-bold cyber-heading">Forgot Password?</a>
-                        </div>
-                        <input type="password" id="loginPasswordInputField" required placeholder="••••••••" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-sm font-medium tracking-widest">
-                    </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg hover:from-orange-500 hover:to-amber-400 active:scale-[0.99] transition-all text-sm uppercase tracking-widest cyber-heading mt-2 border-t border-white/10">Sign Into Dashboard</button>
-                </form>
-                <div class="mt-8 pt-6 border-t border-slate-800/60 text-center">
-                    <p class="text-xs text-slate-400 font-medium">New player? <a href="#" onclick="toggleAuthGatewayView(false)" class="text-amber-400 font-bold hover:underline">Verify Gate Invite</a></p>
-                </div>
-            </div>
-
-            <div id="registrationStatePanelView" class="hidden">
-                <div class="text-center mb-8">
-                    <p class="text-cyan-400 font-bold uppercase tracking-widest text-xs cyber-heading">Gate Registration</p>
-                    <h2 class="text-2xl font-black text-white tracking-tight mt-1">Activate Club Membership</h2>
-                </div>
-                <form onsubmit="executeMemberAccountRegistration(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1.5 cyber-heading">Full Legal Name</label>
-                        <input type="text" id="regNameInput" required placeholder="John Doe" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-all text-sm font-medium">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1.5 cyber-heading">Google Email</label>
-                        <input type="email" id="regEmailInput" required placeholder="name@gmail.com" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-all text-sm font-medium">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1.5 cyber-heading">Joining Invite Code</label>
-                        <input type="text" id="regCodeInput" required placeholder="CHIRAG-XXXX" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-all text-sm font-medium uppercase tracking-wider">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1.5 cyber-heading">Create Password Access Key</label>
-                        <input type="password" id="regPasswordInput" required placeholder="••••••••" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-all text-sm font-medium tracking-widest">
-                    </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-cyan-600 to-blue-500 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl shadow-lg hover:from-cyan-500 hover:to-blue-400 active:scale-[0.99] transition-all text-sm uppercase tracking-widest cyber-heading mt-2 border-t border-white/20">Compile Gate Ledger</button>
-                </form>
-                <div class="mt-6 pt-6 border-t border-slate-800/60 text-center">
-                    <p class="text-xs text-slate-400 font-medium">Already registered? <a href="#" onclick="toggleAuthGatewayView(true)" class="text-cyan-400 font-bold hover:underline">Return to Sign In</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="mainApplicationWorkspaceContainer" class="hidden max-w-7xl mx-auto px-4 mt-8">
+    <div class="max-w-4xl mx-auto space-y-6">
         
-        <div class="bg-gradient-to-r from-slate-900 via-[#0d1527] to-slate-900 border border-slate-800/80 rounded-2xl p-6 mb-8 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
-            <div class="absolute right-0 top-0 bottom-0 w-1/3 bg-radial-gradient from-cyan-500/5 to-transparent pointer-events-none"></div>
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center shadow-lg">
-                    <span class="text-orange-500 text-xl font-black uppercase cyber-heading" id="userAvatarCharacterNode">U</span>
-                </div>
-                <div>
-                    <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2" id="uiGreetingLabelNode">Loading Member Context...</h1>
-                    <p class="text-xs text-slate-400 font-semibold tracking-wide" id="uiSubContextLabelNode">Active Residential Profile Matrix Link</p>
-                </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+            <div>
+                <h1 class="text-2xl font-extrabold text-white tracking-tight" id="welcomeHeading">Chirag Sports Portal</h1>
+                <p class="text-xs text-slate-400 mt-1">Manage active court bookings seamlessly.</p>
             </div>
-            
-            <div class="flex flex-wrap items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-                <div class="bg-slate-950/60 border border-slate-800 px-5 py-2.5 rounded-xl text-center min-w-[110px] shadow-inner relative group">
-                    <span class="absolute -top-2 left-3 bg-[#0d1527] px-1.5 text-[9px] uppercase tracking-widest text-slate-500 font-bold cyber-heading">Ledger Balance</span>
-                    <p class="text-lg font-black text-amber-400 mt-0.5" id="uiTokenBalanceDisplayCount">--</p>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Active Tokens</p>
+            <div class="bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-3">
+                <div class="text-right">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Available Tokens</p>
+                    <p class="text-lg font-extrabold text-amber-400" id="tokenBalanceDisplay">--</p>
                 </div>
-                <button onclick="executeLogoutSequence()" class="bg-slate-950/40 hover:bg-red-950/30 border border-slate-800 hover:border-red-500/30 text-slate-400 hover:text-red-400 font-bold text-xs px-4 py-3 rounded-xl transition-all uppercase tracking-wider cyber-heading shadow-md active:scale-95">Disconnect</button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <div class="lg:col-span-2 space-y-8">
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-xl relative">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="w-5 h-5 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-[10px] text-orange-400 font-bold cyber-heading">1</span>
-                        <h3 class="text-xs uppercase tracking-widest font-black text-slate-300 cyber-heading">Target Matrix Chrono Date</h3>
+            <div class="md:col-span-2 space-y-6">
+                
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="w-5 h-5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 text-xs font-bold flex items-center justify-center">1</span>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Date</h3>
                     </div>
-                    <div class="grid grid-cols-3 gap-3" id="uiTimelineDateGridArray">
+                    <div class="grid grid-cols-3 gap-3" id="calendarDateStrip">
                         </div>
                 </div>
 
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-xl relative">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="w-5 h-5 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-[10px] text-orange-400 font-bold cyber-heading">2</span>
-                        <h3 class="text-xs uppercase tracking-widest font-black text-slate-300 cyber-heading">Select The Court</h3>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="w-5 h-5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 text-xs font-bold flex items-center justify-center">2</span>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Select The Court</h3>
                     </div>
-                    <div class="bg-slate-950/60 p-1 rounded-xl border border-slate-800 flex" id="uiCourtSelectionDeckToggles">
-                        <button onclick="switchSelectedCourtAsset('PB Court 1')" id="btnAsset_PBCourt1" class="flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider rounded-lg transition-all cyber-heading">PB Court 1</button>
-                        <button onclick="switchSelectedCourtAsset('PB Court 2')" id="btnAsset_PBCourt2" class="flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider rounded-lg transition-all cyber-heading">PB Court 2</button>
-                        <button onclick="switchSelectedCourtAsset('BD Court 1')" id="btnAsset_BDCourt1" class="flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider rounded-lg transition-all cyber-heading">BD Court 1</button>
+                    <div class="bg-slate-950 p-1 rounded-xl border border-slate-800 flex" id="assetSelectors">
+                        <button onclick="changeActiveAssetSelection('PB Court 1')" id="assetBtn_PBCourt1" class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all">PB Court 1</button>
+                        <button onclick="changeActiveAssetSelection('PB Court 2')" id="assetBtn_PBCourt2" class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all">PB Court 2</button>
+                        <button onclick="changeActiveAssetSelection('BD Court 1')" id="assetBtn_BDCourt1" class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all">BD Court 1</button>
                     </div>
                 </div>
 
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-xl relative">
-                    <div class="flex justify-between items-center mb-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+                    <div class="flex justify-between items-center mb-3">
                         <div class="flex items-center gap-2">
-                            <span class="w-5 h-5 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-[10px] text-orange-400 font-bold cyber-heading">3</span>
-                            <h3 class="text-xs uppercase tracking-widest font-black text-slate-300 cyber-heading">Select Booking Time Frame</h3>
+                            <span class="w-5 h-5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 text-xs font-bold flex items-center justify-center">3</span>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Select Booking Time Frame</h3>
                         </div>
-                        <span class="text-[10px] font-bold text-orange-400 uppercase tracking-widest bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-sm cyber-heading" id="uiAssetTagLabelView">--</span>
+                        <span class="text-[10px] font-bold bg-slate-950 border border-slate-800 text-orange-400 px-2.5 py-1 rounded-md uppercase tracking-wider" id="activeAssetTagView">--</span>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar" id="uiTimingCellMatrixGrid">
+                    <div class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1" id="timingGridMatrixDeck">
                         </div>
 
-                    <div class="mt-6 pt-6 border-t border-slate-800/60">
-                        <button onclick="commitSecureMemberBooking()" class="w-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:from-orange-500 hover:to-amber-400 active:scale-[0.99] transition-all text-xs uppercase tracking-widest cyber-heading border-t border-white/10 flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(249,115,22,0.15)]">
-                            <span>🔒 Lock Booking Reservation Frame</span>
+                    <div class="mt-5 pt-4 border-t border-slate-800/60">
+                        <button onclick="executeBookingLockPipeline()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl hover:from-orange-400 hover:to-amber-400 transition-all text-xs uppercase tracking-wider shadow-lg">
+                            🔒 Lock Booking Reservation Frame
                         </button>
                     </div>
                 </div>
+
             </div>
 
-            <div class="space-y-8">
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-xl flex flex-col h-[280px]">
-                    <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
-                        <h3 class="text-xs uppercase tracking-widest font-black text-slate-300 cyber-heading">Your Booking Ledger</h3>
-                        <div class="flex gap-2 text-[10px] font-bold tracking-wider uppercase">
-                            <button id="tabLedgerUpcoming" onclick="toggleLedgerFilterUI(true)" class="text-emerald-400 border-b border-emerald-400 pb-0.5">Upcoming Matches</button>
-                            <button id="tabLedgerHistory" onclick="toggleLedgerFilterUI(false)" class="text-slate-500 hover:text-slate-300">History Log</button>
-                        </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2 text-sm text-slate-400 text-center flex flex-col justify-center items-center" id="uiPersonalLedgerScrollLayout">
-                        <span class="text-slate-600 text-lg">📊</span>
-                        <p class="text-xs text-slate-500 font-medium">No active matching record traces found.</p>
+            <div class="space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg h-[240px] flex flex-col">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 pb-2 border-b border-slate-800">Your Booking Ledger</h3>
+                    <div class="flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 flex flex-col justify-center items-center" id="userPersonalLedgerLayout">
+                        <p>No matching records found.</p>
                     </div>
                 </div>
 
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 shadow-xl flex flex-col h-[340px]">
-                    <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
-                        <h3 class="text-xs uppercase tracking-widest font-black text-slate-300 cyber-heading flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                            Live Club Schedule Matrix
-                        </h3>
-                        <span class="text-[9px] font-black tracking-widest bg-slate-950/80 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded-sm uppercase cyber-heading">All Courts</span>
-                    </div>
-                    <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2.5 text-xs text-slate-500 text-center flex flex-col justify-center items-center" id="uiGlobalClubLogScrollLayout">
-                        <p class="font-medium">No upcoming present bookings logged.</p>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg h-[240px] flex flex-col">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 pb-2 border-b border-slate-800">Live Club Schedule Matrix</h3>
+                    <div class="flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 flex flex-col justify-center items-center" id="globalClubScheduleLayout">
+                        <p>No upcoming present bookings logged.</p>
                     </div>
                 </div>
             </div>
@@ -217,458 +93,247 @@
     </div>
 
     <script>
-        // Master memory state variables
-        let systemAuthenticatedUserData = null;
-        let systemGlobalDatabaseSnapshot = { users: [], bookings: [], whitelisted: [] };
-        
-        let localSelectedChronoDateString = "";
-        let localSelectedAssetString = "PB Court 1";
-        let localSelectedTimingSlotString = "";
-        let localLedgerUpcomingFilterToggle = true;
+        // Static user profile session data match logic link
+        const activeSessionUserContext = { fullName: "rahul babbar", email: "rahulbabbar@msn.com" };
 
-        let systemPwaInstallationDeferredPrompt = null;
+        let serverDatabaseCacheSnapshot = { users: [], bookings: [] };
+        let activeSelectedChronoDate = "";
+        let activeSelectedAsset = "PB Court 1";
+        let activeSelectedTimeSlot = "";
 
-        // 🚀 AUTOMATED RE-ENTRY हाथ मिलाना SEQUENCE (Runs instantly on boot)
-        function checkSecureSessionStatus() {
-            fetch('/api/check-session')
-                .then(response => {
-                    if (!response.ok) throw new Error("Unauthorized secure sequence lock.");
-                    return response.json();
-                })
-                .then(data => {
-                    if (data && data.user) {
-                        systemAuthenticatedUserData = data.user;
-                        executeInterfaceWorkspaceBootsequence();
-                    }
-                })
-                .catch(err => {
-                    console.log("🔒 Identity proxy vacant. Standing down to landing terminal gateway view.");
-                });
-        }
-
-        // Intercept standard submission vectors for login handshakes
-        function executeMemberLoginHandshake(event) {
-            event.preventDefault();
-            const email = document.getElementById('loginEmailInputField').value.trim();
-            const password = document.getElementById('loginPasswordInputField').value;
-
-            fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    systemAuthenticatedUserData = data.user;
-                    executeInterfaceWorkspaceBootsequence();
-                } else {
-                    alert(data.message || "Invalid credentials.");
-                }
-            })
-            .catch(err => alert("Operational sync dropped. Server link faulted."));
-        }
-
-        // Execute registration requests
-        function executeMemberAccountRegistration(event) {
-            event.preventDefault();
-            const fullName = document.getElementById('regNameInput').value.trim();
-            const email = document.getElementById('regEmailInput').value.trim();
-            const code = document.getElementById('regCodeInput').value.trim();
-            const password = document.getElementById('regPasswordInput').value;
-
-            fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, email, code, password })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    alert("✓ Gate profile cataloged cleanly! Please log in using your newly generated credentials.");
-                    toggleAuthGatewayView(true);
-                } else {
-                    alert(data.message || "Ledger registration blocked.");
-                }
-            })
-            .catch(err => alert("Network registration stream dropped."));
-        }
-
-        // Clear server cookies instantly during logout
-        function executeLogoutSequence() {
-            fetch('/api/logout', { method: 'POST' })
-                .then(() => {
-                    systemAuthenticatedUserData = null;
-                    window.location.reload();
-                });
-        }
-
-        // Initialize display configuration layout rules
-        function executeInterfaceWorkspaceBootsequence() {
-            document.getElementById('authGatewayContainer').classList.add('hidden');
-            document.getElementById('mainApplicationWorkspaceContainer').classList.remove('hidden');
-
-            document.getElementById('uiGreetingLabelNode').innerText = `Welcome, ${systemAuthenticatedUserData.fullName}`;
-            document.getElementById('userAvatarCharacterNode').innerText = systemAuthenticatedUserData.fullName.charAt(0).toUpperCase();
-
-            initUserCalendarStrip();
-            switchSelectedCourtAsset(localSelectedAssetString);
-            executeCoreSynchronizationPipeline();
-            
-            // Set data streaming loops
-            setInterval(executeCoreSynchronizationPipeline, 8000);
-        }
-
-        // Synchronize and update layout views from live Render dataset snapshots
-        function executeCoreSynchronizationPipeline() {
-            fetch('/api/dashboard-snapshot')
+        function syncPortalDatabaseState() {
+            fetch('/api/admin-fetch-dashboard-snapshot')
                 .then(res => res.json())
                 .then(snapshot => {
-                    systemGlobalDatabaseSnapshot = snapshot;
-                    if(snapshot.tickerText) {
-                        document.getElementById('uiGlobalTickerElement').innerText = snapshot.tickerText;
-                    }
+                    serverDatabaseCacheSnapshot = snapshot;
                     
-                    // Match current user tokens parameter values dynamically
-                    const freshSelf = snapshot.users.find(u => u.google_email.toLowerCase() === systemAuthenticatedUserData.email.toLowerCase());
-                    if(freshSelf) {
-                        systemAuthenticatedUserData.tokensBalance = freshSelf.available_tokens;
-                        document.getElementById('uiTokenBalanceDisplayCount').innerText = freshSelf.available_tokens;
+                    // Update user available token values dynamically
+                    const selfProfile = snapshot.users.find(u => u.google_email.toLowerCase() === activeSessionUserContext.email.toLowerCase());
+                    if(selfProfile) {
+                        document.getElementById('tokenBalanceDisplay').innerText = selfProfile.available_tokens;
                     }
 
-                    renderUserMatrixGridUI();
-                    renderUserPersonalLedgerUI();
-                    renderGlobalClubLogUI();
+                    renderTimelineMatrixCells();
+                    renderLedgerDisplays();
                 })
-                .catch(err => console.log("Stream validation heartbeat sync offline. Retrying..."));
+                .catch(err => console.log("Database snap load connection dropped."));
         }
 
-        // Initialize 3-day layout tracking matrix navigation strip
-        function initUserCalendarStrip() {
-            const grid = document.getElementById('uiTimelineDateGridArray');
-            grid.innerHTML = "";
-            
-            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        // Initialize 3-day calendar tabs
+        function buildCalendarTabs() {
+            const container = document.getElementById('calendarDateStrip');
+            container.innerHTML = "";
             const today = new Date();
 
-            for (let i = 0; i < 3; i++) {
-                const targetDate = new Date();
-                targetDate.setDate(today.getDate() + i);
+            for(let i=0; i<3; i++) {
+                const target = new Date();
+                target.setDate(today.getDate() + i);
 
-                const dayLabel = days[targetDate.getDay()];
-                const dateNum = targetDate.getDate();
-                
-                // Formulate target string wrapper payload index keys: YYYY-MM-DD
-                const yyyy = targetDate.getFullYear();
-                const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-                const dd = String(dateNum).padStart(2, '0');
-                const compString = `${yyyy}-${mm}-${dd}`;
+                const yyyy = target.getFullYear();
+                const mm = String(target.getMonth() + 1).padStart(2, '0');
+                const dd = String(target.getDate()).padStart(2, '0');
+                const trackingDateString = `${yyyy}-${mm}-${dd}`;
 
-                if (i === 0) localSelectedChronoDateString = compString;
+                if(i === 0) activeSelectedChronoDate = trackingDateString;
 
-                const card = document.createElement('button');
-                card.id = `chronoStrip_${compString}`;
-                card.onclick = () => switchUserDateAsset(compString);
-                card.className = "bg-slate-950/40 border border-slate-800 rounded-xl p-3 text-center transition-all cursor-pointer";
-                card.innerHTML = `
-                    <p class="text-[10px] font-bold text-slate-500 tracking-wider cyber-heading uppercase block">${dayLabel}</p>
-                    <p class="text-xl font-black text-slate-200 mt-0.5">${dateNum}</p>
+                const btn = document.createElement('button');
+                btn.id = `cal_${trackingDateString}`;
+                btn.onclick = () => {
+                    activeSelectedChronoDate = trackingDateString;
+                    activeSelectedTimeSlot = "";
+                    updateCalendarStripVisualSelection();
+                    renderTimelineMatrixCells();
+                };
+                btn.className = "bg-slate-950 p-3 rounded-xl border border-slate-800 text-center transition-all cursor-pointer";
+                btn.innerHTML = `
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">${target.toLocaleDateString('en-US', {weekday: 'short'})}</p>
+                    <p class="text-lg font-extrabold text-slate-200 mt-0.5">${target.getDate()}</p>
                 `;
-                grid.appendChild(card);
+                container.appendChild(btn);
             }
-            updateActiveChronoTimelineVisualSelection();
+            updateCalendarStripVisualSelection();
         }
 
-        function switchUserDateAsset(targetChronoString) {
-            localSelectedChronoDateString = targetChronoString;
-            localSelectedTimingSlotString = "";
-            updateActiveChronoTimelineVisualSelection();
-            renderUserMatrixGridUI();
-        }
-
-        function updateActiveChronoTimelineVisualSelection() {
-            const allElements = document.getElementById('uiTimelineDateGridArray').children;
-            for (let el of allElements) {
-                el.className = "bg-slate-950/40 border border-slate-800 rounded-xl p-3 text-center transition-all cursor-pointer";
-                el.children[0].className = "text-[10px] font-bold text-slate-500 tracking-wider cyber-heading uppercase block";
+        function updateCalendarStripVisualSelection() {
+            const children = document.getElementById('calendarDateStrip').children;
+            for(let el of children) {
+                el.className = "bg-slate-950 p-3 rounded-xl border border-slate-800 text-center transition-all cursor-pointer";
             }
-            const activeCard = document.getElementById(`chronoStrip_${localSelectedChronoDateString}`);
-            if (activeCard) {
-                activeCard.className = "bg-slate-900 border-2 border-orange-500/80 rounded-xl p-3 text-center shadow-[0_0_15px_rgba(249,115,22,0.15)] relative";
-                activeCard.children[0].className = "text-[10px] font-bold text-orange-400 tracking-wider cyber-heading uppercase block";
+            const targetActive = document.getElementById(`cal_${activeSelectedChronoDate}`);
+            if(targetActive) {
+                targetActive.className = "bg-slate-900 border-2 border-orange-500 p-3 rounded-xl text-center shadow-md";
             }
         }
 
-        function switchSelectedCourtAsset(assetString) {
-            localSelectedAssetString = assetString;
-            localSelectedTimingSlotString = "";
-            
-            document.getElementById('uiAssetTagLabelView').innerText = assetString === "PB Court 1" ? "PICKLEBALL COURT 1" : assetString === "PB Court 2" ? "PICKLEBALL COURT 2" : "BADMINTON COURT 1";
+        function changeActiveAssetSelection(asset) {
+            activeSelectedAsset = asset;
+            activeSelectedTimeSlot = "";
+            document.getElementById('activeAssetTagView').innerText = asset.toUpperCase();
 
-            const deckButtons = document.getElementById('uiCourtSelectionDeckToggles').children;
-            for (let btn of deckButtons) {
-                btn.className = "flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider rounded-lg transition-all text-slate-500 hover:text-slate-300";
+            const buttons = document.getElementById('assetSelectors').children;
+            for(let btn of buttons) {
+                btn.className = "flex-1 py-2.5 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200";
             }
-            const activeBtn = document.getElementById(`btnAsset_${assetString.replace(/\s+/g, '')}`);
+            const activeBtn = document.getElementById(`assetBtn_${asset.replace(/\s+/g, '')}`);
             if(activeBtn) {
-                activeBtn.className = "flex-1 py-3 text-center text-xs font-black uppercase tracking-wider rounded-lg transition-all bg-gradient-to-b from-slate-800 to-slate-900 text-orange-400 border border-slate-700/60 shadow-md cyber-heading";
+                activeBtn.className = "flex-1 py-2.5 text-xs font-extrabold rounded-lg transition-all bg-slate-800 text-orange-400 border border-slate-700 shadow";
             }
-            renderUserMatrixGridUI();
+            renderTimelineMatrixCells();
         }
 
-        // 🎯 SMART ACCURATE COURT NAME MATCH ENGINE REWRITTEN
-        function isCourtMatch(loggedName, selectedName) {
-            if (!loggedName || !selectedName) return false;
-            
-            let logged = loggedName.toLowerCase().trim();
-            let selected = selectedName.toLowerCase().trim();
-            
-            // 🌟 SMART FALLBACK BRIDGE: Maps generic 'pickleball court' entries directly to PB Court 1
-            if (logged === "pickleball court") {
-                logged = "pb court 1";
-            }
-            
-            // Standardize alphanumerics to eliminate special characters or spaces
-            let n1 = logged.replace(/[^a-z0-9]/g, '');
-            let n2 = selected.replace(/[^a-z0-9]/g, '');
-            
-            if (n1.startsWith('pb')) n1 = n1.replace('pb', 'pickleball');
-            if (n2.startsWith('pb')) n2 = n2.replace('pb', 'pickleball');
-            if (n1.startsWith('bd')) n1 = n1.replace('bd', 'badminton');
-            if (n2.startsWith('bd')) n2 = n2.replace('bd', 'badminton');
-            
-            return n1 === n2;
-        }
+        function renderTimelineMatrixCells() {
+            const deck = document.getElementById('timingGridMatrixDeck');
+            deck.innerHTML = "";
 
-        // Main scheduler cell compilation logic module
-        function renderUserMatrixGridUI() {
-            const grid = document.getElementById('uiTimingCellMatrixGrid');
-            grid.innerHTML = "";
-
-            const targetSlots = [
+            const operationsSlots = [
                 "06:00 - 07:00", "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00",
                 "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00",
                 "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00",
                 "18:00 - 19:00", "19:00 - 20:00", "20:00 - 21:00", "21:00 - 22:00"
             ];
 
-            targetSlots.forEach(slot => {
-                // Check if the current spreadsheet rows contain a matching booking
-                const occupationTrace = systemGlobalDatabaseSnapshot.bookings.find(b => {
+            operationsSlots.forEach(slot => {
+                const checkReserved = serverDatabaseCacheSnapshot.bookings.find(b => {
                     const dateClean = String(b.date).split('T')[0].trim();
-                    const targetClean = String(localSelectedChronoDateString).trim();
-                    return dateClean === targetClean && 
-                           isCourtMatch(b.court_name, localSelectedAssetString) && 
+                    return dateClean === activeSelectedChronoDate && 
+                           String(b.court_name).trim().toLowerCase() === activeSelectedAsset.trim().toLowerCase() && 
                            String(b.time_slot).trim() === slot;
                 });
 
                 const cell = document.createElement('button');
-                cell.className = "w-full border p-4 rounded-xl flex flex-col items-center justify-center transition-all text-center";
-                
-                if (occupationTrace) {
-                    // Cell status is occupied
-                    const isSelfOwned = occupationTrace.booked_by.toLowerCase().trim() === systemAuthenticatedUserData.fullName.toLowerCase().trim();
-                    cell.className = isSelfOwned 
-                        ? "w-full bg-emerald-950/40 border-emerald-500/40 p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-inner"
-                        : "w-full bg-slate-950/80 border-slate-900 p-4 rounded-xl flex flex-col items-center justify-center text-center opacity-40 cursor-not-allowed";
+                cell.className = "w-full border p-3 rounded-xl flex flex-col items-center justify-center transition-all text-center";
+
+                if(checkReserved) {
+                    const selfOwned = checkReserved.booked_by.toLowerCase().trim() === activeSessionUserContext.fullName.toLowerCase().trim();
+                    cell.className = selfOwned
+                        ? "w-full bg-emerald-950/30 border-emerald-500/30 p-3 rounded-xl flex flex-col items-center justify-center text-center shadow-inner"
+                        : "w-full bg-slate-950 border-slate-900 p-3 rounded-xl flex flex-col items-center justify-center text-center opacity-30 cursor-not-allowed";
                     
                     cell.innerHTML = `
-                        <span class="text-xs font-black tracking-wider text-slate-200">${slot}</span>
-                        <span class="text-[9px] uppercase tracking-widest font-bold mt-1 shadow-sm ${isSelfOwned ? 'text-emerald-400' : 'text-slate-500'} cyber-heading">
-                            ${isSelfOwned ? '✓ Your Reservation' : '🔒 Match Reserved'}
-                        </span>
+                        <span class="text-xs font-bold text-slate-300">${slot}</span>
+                        <span class="text-[9px] uppercase font-bold mt-0.5 ${selfOwned ? 'text-emerald-400':'text-slate-600'}">${selfOwned ? 'Your Match' : 'Occupied'}</span>
                     `;
-                    if(!isSelfOwned) cell.disabled = true;
+                    if(!selfOwned) cell.disabled = true;
                 } else {
-                    // Cell status is available
-                    const isCurrentlySelected = localSelectedTimingSlotString === slot;
-                    cell.className = isCurrentlySelected
-                        ? "w-full bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500 p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-lg transform scale-[1.01]"
-                        : "w-full bg-slate-950/30 border-slate-800/80 hover:border-slate-700/80 p-4 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer active:scale-[0.99]";
+                    const activeSelect = activeSelectedTimeSlot === slot;
+                    cell.className = activeSelect
+                        ? "w-full bg-slate-950 border-2 border-amber-500 p-3 rounded-xl flex flex-col items-center justify-center text-center shadow transform scale-[1.01]"
+                        : "w-full bg-slate-950/40 border-slate-800 hover:border-slate-700 p-3 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer";
                     
-                    cell.onclick = () => selectTentativeUserSlot(slot);
+                    cell.onclick = () => {
+                        activeSelectedTimeSlot = activeSelectedTimeSlot === slot ? "" : slot;
+                        renderTimelineMatrixCells();
+                    };
                     cell.innerHTML = `
-                        <span class="text-xs font-black tracking-wider ${isCurrentlySelected ? 'text-amber-400' : 'text-slate-300'}">${slot}</span>
-                        <span class="text-[9px] uppercase tracking-widest font-bold mt-1 ${isCurrentlySelected ? 'text-amber-500 animate-pulse' : 'text-slate-600'} cyber-heading">
-                            ${isCurrentlySelected ? 'Selected Cell' : 'Available Slot'}
-                        </span>
+                        <span class="text-xs font-bold ${activeSelect ? 'text-amber-400':'text-slate-400'}">${slot}</span>
+                        <span class="text-[9px] uppercase font-bold mt-0.5 ${activeSelect ? 'text-amber-500':'text-slate-600'}">${activeSelect ? 'Selected Cell':'Available Slot'}</span>
                     `;
                 }
-                grid.appendChild(cell);
+                deck.appendChild(cell);
             });
         }
 
-        function selectTentativeUserSlot(slotString) {
-            localSelectedTimingSlotString = localSelectedTimingSlotString === slotString ? "" : slotString;
-            renderUserMatrixGridUI();
-        }
-
-        // Commit active booking verification request to Render endpoint
-        function commitSecureMemberBooking() {
-            if(!localSelectedTimingSlotString) {
-                alert("Please tap to select an available time cell slot frame first.");
-                return;
-            }
-            if(parseInt(systemAuthenticatedUserData.tokensBalance) <= 0) {
-                alert("Transaction Blocked: Your structural token ledger balance has reached zero.");
+        function executeBookingLockPipeline() {
+            if(!activeSelectedTimeSlot) {
+                alert("Please tap to select an available timeline cell frame first.");
                 return;
             }
 
-            const payload = {
-                courtName: localSelectedAssetString,
-                sportType: localSelectedAssetString.startsWith('BD') ? "BADMINTON" : "PICKLEBALL",
-                userName: systemAuthenticatedUserData.fullName,
-                date: localSelectedChronoDateString,
-                timeSlot: localSelectedTimingSlotString
+            const submissionPayload = {
+                courtName: activeSelectedAsset,
+                sportType: activeSelectedAsset.startsWith('BD') ? "BADMINTON" : "PICKLEBALL",
+                userName: activeSessionUserContext.fullName,
+                date: activeSelectedChronoDate,
+                timeSlot: activeSelectedTimeSlot
             };
 
+            // ⚡ CONNECTED DIRECTLY TO YOUR REAL TIME SERVER ENDPOINT ROUTE
             fetch('/api/bookings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(submissionPayload)
             })
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
                     alert("✓ Reservation Frame locked cleanly!");
-                    localSelectedTimingSlotString = "";
-                    executeCoreSynchronizationPipeline();
+                    activeSelectedTimeSlot = "";
+                    syncPortalDatabaseState();
                 } else {
-                    alert(data.message || "Booking transaction denied.");
+                    alert(data.message || "Execution tracking rejected.");
                 }
             })
             .catch(err => alert("Operational pipeline timeout. Direct row entry dropped."));
         }
 
-        function executeCancellationPipeline(bookingId) {
-            if(!confirm("Are you sure you want to release this match reservation slot? Tokens will be instantly returned to your ledger balance.")) return;
+        function executeReleasePipeline(bookingId) {
+            if(!confirm("Are you sure you want to release this reservation frame?")) return;
 
             fetch(`/api/bookings/${bookingId}`, { method: 'DELETE' })
                 .then(res => res.json())
                 .then(data => {
                     if(data.status === 'success') {
-                        alert("✓ Booking deleted safely. Ledger balance synchronized.");
-                        executeCoreSynchronizationPipeline();
-                    } else {
-                        alert(data.message || "Cancellation request rejected.");
+                        alert("✓ Booking released cleanly.");
+                        syncPortalDatabaseState();
                     }
                 })
-                .catch(err => alert("Failed to pass cancellation request across pipeline channels."));
+                .catch(err => alert("Failed to transmit structural row update."));
         }
 
-        function renderUserPersonalLedgerUI() {
-            const container = document.getElementById('uiPersonalLedgerScrollLayout');
-            container.innerHTML = "";
+        function renderLedgerDisplays() {
+            const pLedger = document.getElementById('userPersonalLedgerLayout');
+            const gLedger = document.getElementById('globalClubScheduleLayout');
 
-            const rawDate = new Date();
-            rawDate.setHours(0,0,0,0);
-
-            // Filter personal bookings out of array matrices
-            let selfBookings = systemGlobalDatabaseSnapshot.bookings.filter(b => b.booked_by.toLowerCase().trim() === systemAuthenticatedUserData.fullName.toLowerCase().trim());
-            
-            // Sort allocations logically by timeline dates
-            selfBookings.sort((a,b) => new Date(a.date) - new Date(b.date));
-
-            if(localLedgerUpcomingFilterToggle) {
-                selfBookings = selfBookings.filter(b => new Date(b.date.split('T')[0]) >= rawDate);
+            // 1. Process Personal Ledger Frame
+            const personalRows = serverDatabaseCacheSnapshot.bookings.filter(b => b.booked_by.toLowerCase().trim() === activeSessionUserContext.fullName.toLowerCase().trim());
+            if(personalRows.length === 0) {
+                pLedger.className = "flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 flex flex-col justify-center items-center";
+                pLedger.innerHTML = `<p>No matching records found.</p>`;
             } else {
-                selfBookings = selfBookings.filter(b => new Date(b.date.split('T')[0]) < rawDate);
+                pLedger.className = "flex-1 overflow-y-auto space-y-2 w-full text-left pr-1";
+                pLedger.innerHTML = "";
+                personalRows.forEach(b => {
+                    const row = document.createElement('div');
+                    row.className = "bg-slate-950 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center text-xs";
+                    row.innerHTML = `
+                        <div>
+                            <p class="font-bold text-slate-300">${b.court_name} ➔ ${b.time_slot}</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5">Date: ${b.date.split('T')[0]}</p>
+                        </div>
+                        <button onclick="executeReleasePipeline('${b.booking_id}')" class="text-[10px] font-bold text-red-400 bg-red-500/5 border border-red-500/20 px-2 py-1 rounded-md uppercase">Release</button>
+                    `;
+                    pLedger.appendChild(row);
+                });
             }
 
-            if(selfBookings.length === 0) {
-                container.className = "flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2 text-sm text-slate-400 text-center flex flex-col justify-center items-center";
-                container.innerHTML = `<span class="text-slate-700 text-lg">📊</span><p class="text-xs text-slate-500 font-medium">No matching traces found.</p>`;
-                return;
-            }
-
-            container.className = "flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2 w-full text-left";
-            selfBookings.forEach(b => {
-                const row = document.createElement('div');
-                row.className = "w-full bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex justify-between items-center gap-2";
-                
-                const splitDate = b.date.split('T')[0];
-                const dateParts = splitDate.split('-');
-                const displayDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : splitDate;
-
-                row.innerHTML = `
-                    <div>
-                        <p class="text-xs font-black text-slate-200 uppercase">${b.court_name} ➔ ${b.time_slot}</p>
-                        <p class="text-[10px] text-slate-500 font-bold cyber-heading mt-0.5">${displayDate} · ID: ${b.booking_id}</p>
-                    </div>
-                    ${localLedgerUpcomingFilterToggle ? `<button onclick="executeCancellationPipeline('${b.booking_id}')" class="text-[10px] font-bold text-red-400/80 hover:text-red-400 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 px-2.5 py-1.5 rounded-md uppercase tracking-wider transition-all cyber-heading">Cancel</button>` : ''}
-                `;
-                container.appendChild(row);
-            });
-        }
-
-        function renderGlobalClubLogUI() {
-            const container = document.getElementById('uiGlobalClubLogScrollLayout');
-            container.innerHTML = "";
-
-            const todayStr = new Date().toISOString().split('T')[0];
-            const liveBookings = systemGlobalDatabaseSnapshot.bookings.filter(b => b.date.split('T')[0] === todayStr);
-
-            if(liveBookings.length === 0) {
-                container.className = "flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2.5 text-xs text-slate-500 text-center flex flex-col justify-center items-center";
-                container.innerHTML = `<p class="font-medium">No upcoming present bookings logged.</p>`;
-                return;
-            }
-
-            container.className = "flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2 w-full text-left";
-            liveBookings.forEach(b => {
-                const card = document.createElement('div');
-                card.className = "w-full bg-slate-950/30 border border-slate-800/40 rounded-xl p-2.5 flex items-center justify-between text-xs";
-                card.innerHTML = `
-                    <span class="font-bold text-slate-400 bg-slate-950/80 px-2 py-1 rounded-md border border-slate-800 tracking-wider">${b.time_slot.split(' ')[0]}</span>
-                    <span class="font-semibold text-slate-300 truncate max-w-[120px] text-center">${b.booked_by}</span>
-                    <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest cyber-heading">${b.court_name.replace('Court ', '')}</span>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function toggleLedgerFilterUI(showUpcoming) {
-            localLedgerUpcomingFilterToggle = showUpcoming;
-            
-            const btnUpcoming = document.getElementById('tabLedgerUpcoming');
-            const btnHistory = document.getElementById('tabLedgerHistory');
-
-            if(showUpcoming) {
-                btnUpcoming.className = "text-emerald-400 border-b border-emerald-400 pb-0.5";
-                btnHistory.className = "text-slate-500 hover:text-slate-300";
+            // 2. Process Global Schedule Frame
+            const globalRows = serverDatabaseCacheSnapshot.bookings.filter(b => b.date.split('T')[0] === activeSelectedChronoDate);
+            if(globalRows.length === 0) {
+                gLedger.className = "flex-1 overflow-y-auto space-y-2 text-xs text-slate-500 flex flex-col justify-center items-center";
+                gLedger.innerHTML = `<p>No upcoming present bookings logged.</p>`;
             } else {
-                btnHistory.className = "text-amber-400 border-b border-amber-400 pb-0.5";
-                btnUpcoming.className = "text-slate-500 hover:text-slate-300";
+                gLedger.className = "flex-1 overflow-y-auto space-y-2 w-full text-left pr-1";
+                gLedger.innerHTML = "";
+                globalRows.forEach(b => {
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-950/40 border border-slate-800/60 p-2 rounded-xl flex justify-between items-center text-[11px]";
+                    card.innerHTML = `
+                        <span class="font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">${b.time_slot.split(' ')[0]}</span>
+                        <span class="text-slate-300 font-semibold truncate max-w-[100px]">${b.booked_by}</span>
+                        <span class="text-[9px] font-bold text-orange-400 uppercase">${b.court_name.replace('Court ', '')}</span>
+                    `;
+                    gLedger.appendChild(card);
+                });
             }
-            renderUserPersonalLedgerUI();
         }
 
-        function toggleAuthGatewayView(showLogin) {
-            document.getElementById('loginStatePanelView').classList.toggle('hidden', !showLogin);
-            document.getElementById('registrationStatePanelView').classList.toggle('hidden', showLogin);
-        }
-
-        // PWA App Shell Lifecycle Handlers
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            systemPwaInstallationDeferredPrompt = e;
-            const promptCard = document.getElementById('pwaInstallationPromptCard');
-            if (promptCard) promptCard.classList.remove('hidden');
+        // Initialize lifecycle sequences
+        window.addEventListener('DOMContentLoaded', () => {
+            buildCalendarTabs();
+            changeActiveAssetSelection('PB Court 1');
+            syncPortalDatabaseState();
+            setInterval(syncPortalDatabaseState, 7000);
         });
-
-        function executeNativePwaInstallation() {
-            if (!systemPwaInstallationDeferredPrompt) return;
-            systemPwaInstallationDeferredPrompt.prompt();
-            systemPwaInstallationDeferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    document.getElementById('pwaInstallationPromptCard').classList.add('hidden');
-                }
-                systemPwaInstallationDeferredPrompt = null;
-            });
-        }
-
-        // ⚡ RUN ACTIVE SECURITY Handshake SEQUENCE ON LOAD
-        window.addEventListener('DOMContentLoaded', checkSecureSessionStatus);
     </script>
 </body>
 </html>
