@@ -11,7 +11,7 @@ app.use(cookieParser()); // ⚡ Allows the server to seamlessly read secure logi
 app.use(express.static(__dirname));
 
 // ⚡ MASTER SPREADSHEET DISPATCH LINK
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxbiHJTFD4f7OmCoG8AfpV79IkEoqVZ8WWEUJ0PuIs40VWB41rDRyjnVzb5Zb7BUHkyJQ/exec";
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
 let masterCachedUsersRegistry = [];
 let masterCachedBookingsRegistry = [];
