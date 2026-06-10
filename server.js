@@ -17,9 +17,37 @@ app.get('/api/test-login', async (req, res) => {
 
 try {
 
-const response = await fetch(
-  APPS_SCRIPT_URL + '?action=health'
-);
+```
+const response = await fetch(APPS_SCRIPT_URL, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    action: 'memberLogin',
+    email: 'rahulbabbar@msn.com',
+    password: 'asdfghjkl'
+  })
+});
+
+const text = await response.text();
+
+res.send(text);
+```
+
+} catch (err) {
+
+```
+res.status(500).json({
+  success: false,
+  error: err.toString(),
+  stack: err.stack
+});
+```
+
+}
+
+});
 
 const text = await response.text();
 
