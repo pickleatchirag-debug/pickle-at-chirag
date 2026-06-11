@@ -1,118 +1,59 @@
 const express = require('express');
-const cookieParser = require('cookie-parser');
 const path = require('path');
+const cors = require('cors');
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const APPS_SCRIPT_URL =
-'https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec';
+// 🔗 PASTE YOUR LATEST GOOGLE APPS SCRIPT WEB APP DEPLOYMENT URL HERE
+const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
+app.use(cors());
 app.use(express.json());
-app.use(cookieParser());
+app.use(express.static(path.join(__dirname)));
 
-app.use(express.static(__dirname));
-
-/* ---------------------------------
-   HEALTH CHECK
----------------------------------- */
-
-app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Render server running'
-  });
-});
-
-/* ---------------------------------
-   DEBUG
----------------------------------- */
-
-app.get('/api/debug', (req, res) => {
-  res.json({
-    nodeVersion: process.version,
-    hasFetch: typeof fetch !== 'undefined'
-  });
-});
-
-/* ---------------------------------
-   TEST APPS SCRIPT CONNECTION
----------------------------------- */
-
-app.get('/api/test-login', async (req, res) => {
-
+/**
+ * Universal Proxy Forwarder
+ * Forwards requests cleanly to Google Apps Script from the server side, entirely eliminating browser CORS limits.
+ */
+async function forwardToAppsScriptProxy(payload, expressResponse) {
   try {
-
-    const response = await fetch(
-      APPS_SCRIPT_URL + '?action=health'
-    );
-
-    const data = await response.text();
-
-    res.send(data);
-
-  } catch (err) {
-
-    console.error(err);
-
-    res.status(500).json({
-      success: false,
-      error: err.toString()
-    });
-
-  }
-
-});
-
-/* ---------------------------------
-   MEMBER LOGIN
----------------------------------- */
-
-app.post('/api/login', async (req, res) => {
-
-  try {
-
-    const response = await fetch(APPS_SCRIPT_URL, {
+    const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "text/plain"
       },
-      body: JSON.stringify({
-        action: 'memberLogin',
-        email: req.body.email,
-        password: req.body.password
-      })
+      body: JSON.stringify(payload),
+      follow: 20 // Enforces macro execution redirection hops natively
     });
 
-    const text = await response.text();
+    const responseData = await response.json();
+    return expressResponse.json(responseData);
 
-    res.send(text);
-
-  } catch (err) {
-
-    console.error(err);
-
-    res.status(500).json({
+  } catch (error) {
+    console.error("❌ Proxy pipeline breakdown: ", error);
+    return expressResponse.status(502).json({
       success: false,
-      error: err.toString()
+      message: "Synchronization gateway timeout. Ensure your Apps Script macro is deployed as a New Version."
     });
-
   }
+}
 
+// Route explicitly handling proxy targets matching index.html endpoints
+app.post('/api/gateway', (req, res) => {
+  forwardToAppsScriptProxy(req.body, res);
 });
 
-/* ---------------------------------
-   FRONTEND
----------------------------------- */
-
+// Fallback to route standard client static templates
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-/* ---------------------------------
-   START SERVER
----------------------------------- */
-
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`====================================================`);
+  console.log(` 🚀 CHIRAG SPORTS PORTAL PROXY ACTIVE (CORS ELIMINATED)`);
+  console.log(` 🔗 Target URL: ${GOOGLE_APPS_SCRIPT_URL}`);
+  console.log(` 🌐 Internal Port Loop active on port: ${PORT}`);
+  console.log(`====================================================`);
 });

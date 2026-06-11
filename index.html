@@ -351,9 +351,6 @@
 
         fetch(BACKEND_WEBAPP_URL, {
             method: 'POST',
-            headers: {
-                "Content-Type": "application/json"
-            },
             body: JSON.stringify({ action: "memberLogin", email: email, password: password })
         })
         .then(r => r.json()).then(res => {
@@ -398,9 +395,6 @@
         // 1. Fetch live time slot openings matching the calendar strip choice
         fetch(BACKEND_WEBAPP_URL, {
             method: 'POST',
-            headers: {
-                "Content-Type": "application/json"
-            },
             body: JSON.stringify({ action: "getAvailability", sessionToken: secureUserSessionToken, date: selectedUserDateStr })
         })
         .then(r => r.json()).then(res => {
@@ -413,9 +407,6 @@
         // 2. Fetch logged records associated with active token
         fetch(BACKEND_WEBAPP_URL, {
             method: 'POST',
-            headers: {
-                "Content-Type": "application/json"
-            },
             body: JSON.stringify({ action: "getMyBookings", sessionToken: secureUserSessionToken })
         })
         .then(r => r.json()).then(res => {
@@ -548,9 +539,6 @@
         if (confirm("Are you sure you want to cancel this slot? Your token will be instantly refunded to your balance pool.")) {
             fetch(BACKEND_WEBAPP_URL, {
                 method: 'POST',
-                headers: {
-                    "Content-Type": "application/json"
-                },
                 body: JSON.stringify({ action: "cancelBooking", bookingId: bookingId, sessionToken: secureUserSessionToken })
             })
             .then(r => r.json()).then(res => {
@@ -569,9 +557,6 @@
         
         fetch(BACKEND_WEBAPP_URL, {
             method: 'POST',
-            headers: {
-                "Content-Type": "application/json"
-            },
             body: JSON.stringify({
                 action: "secureBooking",
                 courtName: selectedUserAsset,
