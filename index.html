@@ -5,11 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pickle@chirag</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Ensure the scrollbar doesn't jump */
-    ::-webkit-scrollbar { width: 6px; } 
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
-  </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
   <main class="p-4 max-w-xl mx-auto">
@@ -22,49 +17,83 @@
     </div>
 
     <div id="viewWorkspacePanel" class="hidden space-y-6">
+      <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+        <div>
+            <h3 id="lblWorkspaceMemberName" class="font-black text-white">--</h3>
+            <p class="text-xs text-amber-400 font-bold">Tokens: <span id="lblWorkspaceAvailableTokens">0</span></p>
+        </div>
+      </div>
       <div id="userTimeSlotMatrixGrid" class="grid grid-cols-2 gap-2"></div>
       <div id="userPersonalLedgerContainer" class="space-y-2"></div>
-      <div id="viewGlobalClubTimeline" class="space-y-2"></div>
       <button onclick="executeLogoutSequence()" class="text-xs uppercase text-slate-500">Logout</button>
     </div>
   </main>
 
   <script>
-    // ✅ Pointing to your proxy (server.js handles the forwarding)
-    const BACKEND_WEBAPP_URL = "/api/gateway"; 
-    
-    // ... [Add your state variables here: matrixAvailabilityRecords, personalLedgerBookings, etc.] ...
+    const BACKEND_WEBAPP_URL = "/api/gateway";
+    let secureUserSessionToken = "";
+    let matrixAvailabilityRecords = [];
 
-    // IMPORTANT: When calling your API from now on, ensure the payload includes the 'action' key
-    // Example for your sync function:
-    function syncUserLogsAndMatrix() {
-        if(!secureUserSessionToken) return;
-        
-        // 1. Fetch Availability (Date-specific grid)
-        fetch(BACKEND_WEBAPP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: "getAvailability", sessionToken: secureUserSessionToken, date: selectedUserDateStr })
-        })
-        .then(r => r.json()).then(res => {
-            if(res.success) {
-                matrixAvailabilityRecords = res.availability;
-                renderUserMatrixGridUI();
-            }
-        });
+    // Local IST Date Helper
+    function getNowLocalIST() { 
+        return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); 
+    }
 
-        // 2. Fetch Global Timeline (All upcoming bookings)
-        fetch(BACKEND_WEBAPP_URL, {
+    async function executeMemberLoginHandshake() {
+        const email = document.getElementById('loginEmailField').value;
+        const password = document.getElementById('loginPasswordField').value;
+        const res = await fetch(BACKEND_WEBAPP_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: "getUpcomingBookings", sessionToken: secureUserSessionToken })
-        })
-        .then(r => r.json()).then(res => {
-            if(res.success) renderGlobalClubTimelineUI(res.bookings);
+            body: JSON.stringify({ action: "memberLogin", email, password })
+        }).then(r => r.json());
+
+        if(res.success) {
+            secureUserSessionToken = res.token;
+            document.getElementById('lblWorkspaceMemberName').innerText = res.full_name;
+            document.getElementById('lblWorkspaceAvailableTokens').innerText = res.tokens;
+            toggleView('workspace');
+            syncUserLogsAndMatrix();
+        } else { alert(res.message); }
+    }
+
+    function renderUserMatrixGridUI() {
+        const grid = document.getElementById('userTimeSlotMatrixGrid');
+        grid.innerHTML = "";
+        matrixAvailabilityRecords.forEach(l => {
+            let isBooked = l.status === "BOOKED";
+            let label = isBooked ? ("❄️ " + l.bookedBy) : "Available";
+            let style = isBooked ? "bg-slate-800 text-slate-500" : "bg-red-950/20 text-red-400";
+            grid.innerHTML += `<div class="p-3 rounded-xl border ${style}">
+                <p class="text-xs font-mono">${l.slot}</p>
+                <p class="text-[9px] uppercase font-black">${label}</p>
+            </div>`;
         });
     }
 
-    // [Include renderUserMatrixGridUI, renderUserPersonalLedgerUI, and renderGlobalClubTimelineUI as per previous steps]
+    async function syncUserLogsAndMatrix() {
+        const now = getNowLocalIST();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        
+        const res = await fetch(BACKEND_WEBAPP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "getAvailability", sessionToken: secureUserSessionToken, date: dateStr })
+        }).then(r => r.json());
+        
+        if(res.success) {
+            matrixAvailabilityRecords = res.availability;
+            renderUserMatrixGridUI();
+        }
+    }
+
+    function toggleView(view) {
+        document.getElementById('viewLoginPanel').classList.toggle('hidden', view !== 'login');
+        document.getElementById('viewWorkspacePanel').classList.toggle('hidden', view !== 'workspace');
+    }
+
+    function executeLogoutSequence() {
+        localStorage.clear();
+        location.reload();
+    }
   </script>
 </body>
 </html>
