@@ -1,1 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pickle@chirag</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+  <main class="p-4 max-w-xl mx-auto">
+    <div id="viewLoginPanel" class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+      <form id="coreLoginFormHub" onsubmit="event.preventDefault(); executeMemberLoginHandshake();" class="space-y-4">
+        <input type="email" id="loginEmailField" placeholder="Email" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm">
+        <input type="password" id="loginPasswordField" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm">
+        <button type="submit" class="w-full bg-red-600 text-white font-black py-4 rounded-xl">Sign In</button>
+      </form>
+    </div>
 
+    <div id="viewWorkspacePanel" class="hidden space-y-6">
+      <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+        <div>
+            <h3 id="lblWorkspaceMemberName" class="font-black text-white">--</h3>
+            <p class="text-xs text-amber-400 font-bold">Tokens: <span id="lblWorkspaceAvailableTokens">0</span></p>
+        </div>
+      </div>
+      <select id="courtSelector" onchange="syncUserLogsAndMatrix()" class="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs">
+          <option value="Pickleball Court 1">Pickleball Court 1</option>
+          <option value="Pickleball Court 2">Pickleball Court 2</option>
+          <option value="Badminton Court 1">Badminton Court 1</option>
+      </select>
+      <div id="userTimeSlotMatrixGrid" class="grid grid-cols-2 gap-2"></div>
+      <div id="userPersonalLedgerContainer" class="space-y-2"></div>
+      <button onclick="executeLogoutSequence()" class="text-xs uppercase text-slate-500">Logout</button>
+    </div>
+  </main>
+
+  <script>
+    const BACKEND_WEBAPP_URL = "/api/gateway";
+    let secureUserSessionToken = "";
+    let matrixAvailabilityRecords = [];
+
+    function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
+
+    async function executeMemberLoginHandshake() {
+        const email = document.getElementById('loginEmailField').value;
+        const password = document.getElementById('loginPasswordField').value;
+        const res = await fetch(BACKEND_WEBAPP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "memberLogin", email, password })
+        }).then(r => r.json());
+
+        if(res.success) {
+            secureUserSessionToken = res.token;
+            document.getElementById('lblWorkspaceMemberName').innerText = res.full_name;
+            document.getElementById('lblWorkspaceAvailableTokens').innerText = res.tokens;
+            toggleView('workspace');
+            syncUserLogsAndMatrix();
+        } else { alert(res.message); }
+    }
+
+    async function syncUserLogsAndMatrix() {
+        const now = getNowLocalIST();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const court = document.getElementById('courtSelector').value;
+        
+        const res = await fetch(BACKEND_WEBAPP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "getAvailability", sessionToken: secureUserSessionToken, date: dateStr })
+        }).then(r => r.json());
+        
+        if(res.success) {
+            matrixAvailabilityRecords = res.availability.filter(a => a.court === court);
+            renderUserMatrixGridUI();
+        }
+    }
+
+    function renderUserMatrixGridUI() {
+        const grid = document.getElementById('userTimeSlotMatrixGrid');
+        grid.innerHTML = "";
+        matrixAvailabilityRecords.forEach(l => {
+            let isBooked = l.status === "BOOKED";
+            let label = isBooked ? ("❄️ " + l.bookedBy) : "Available";
+            let style = isBooked ? "bg-slate-800 text-slate-500" : "bg-red-950/20 text-red-400 cursor-pointer";
+            let clickAction = isBooked ? "" : `onclick="secureBooking('${l.slot}')"`;
+            
+            grid.innerHTML += `<div ${clickAction} class="p-3 rounded-xl border ${style}">
+                <p class="text-xs font-mono">${l.slot}</p>
+                <p class="text-[9px] uppercase font-black">${label}</p>
+            </div>`;
+        });
+    }
+
+    async function secureBooking(slot) {
+        const court = document.getElementById('courtSelector').value;
+        const now = getNowLocalIST();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        
+        const res = await fetch(BACKEND_WEBAPP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                action: "secureBooking", 
+                sessionToken: secureUserSessionToken, 
+                courtName: court, 
+                timeSlot: slot,
+                date: dateStr,
+                userName: document.getElementById('lblWorkspaceMemberName').innerText 
+            })
+        }).then(r => r.json());
+        
+        if(res.status === "success") {
+            alert("Booking secured!");
+            syncUserLogsAndMatrix();
+        } else { alert(res.message); }
+    }
+
+    function toggleView(view) {
+        document.getElementById('viewLoginPanel').classList.toggle('hidden', view !== 'login');
+        document.getElementById('viewWorkspacePanel').classList.toggle('hidden', view !== 'workspace');
+    }
+
+    function executeLogoutSequence() { localStorage.clear(); location.reload(); }
+  </script>
+</body>
+</html>
