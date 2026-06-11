@@ -376,7 +376,10 @@
             initUserCalendarStrip();
             startPollingLiveWorkspaceLogs();
         })
-        .catch(() => alert("Authorization channel offline. Verify WebApp URL configurations."));
+        .catch(err => {
+          console.error("Login Error:", err);
+          alert("Login Error. Check browser console.");
+        });
     }
 
     function startPollingLiveWorkspaceLogs() {
