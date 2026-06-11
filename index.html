@@ -37,11 +37,9 @@
       height: 240px;
       position: relative;
       z-index: 2;
-
       filter:
         drop-shadow(0 0 30px rgba(34,211,238,.25))
         drop-shadow(0 0 60px rgba(34,211,238,.15));
-
       animation: splashFloat 2.5s ease-in-out infinite;
     }
 
@@ -50,7 +48,6 @@
       width: 260px;
       height: 260px;
       border-radius: 9999px;
-
       background:
         radial-gradient(
           circle,
@@ -58,7 +55,6 @@
           rgba(34,211,238,.12) 40%,
           transparent 75%
         );
-
       filter: blur(30px);
     }
 
@@ -86,15 +82,8 @@
 
   <div id="appFirstBootSplashScreen">
     <div class="relative flex flex-col items-center">
-
       <div class="splash-logo-glow"></div>
-
-      <img
-        src="/icon-512.png?v=6.0.0"
-        alt="Pickle At Chirag"
-        class="splash-logo-main"
-      >
-
+      <img src="/icon-512.png?v=6.0.0" alt="Pickle At Chirag" class="splash-logo-main">
     </div>
   </div>
 
@@ -139,13 +128,7 @@
           Sign Into Dashboard
         </button>
         <div class="text-center mt-4">
-          <a
-            href="#"
-            onclick="alert('Please contact the club administrator for password assistance.'); return false;"
-            class="text-[11px] text-slate-500 hover:text-cyan-400"
-          >
-            Forgot Password?
-          </a>
+          <a href="#" onclick="alert('Please contact the club administrator for password assistance.'); return false;" class="text-[11px] text-slate-500 hover:text-cyan-400">Forgot Password?</a>
         </div> 
       </form>
     </div>
@@ -217,7 +200,7 @@
   </footer>
 
   <script>
-    const BACKEND_WEBAPP_URL = "/api/gateway";
+    const BACKEND_WEBAPP_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
     const TIME_SLOTS = [
       "07:00-08:00", "08:00-09:00", "09:00-10:00", "10:00-11:00", 
@@ -393,14 +376,13 @@
         if (syncInterval) {
           clearInterval(syncInterval);
         }
-
         syncInterval = setInterval(syncUserLogsAndMatrix, 8000);
     }
 
     function syncUserLogsAndMatrix() {
         if(!secureUserSessionToken) return;
         
-        // 1. Fetch live flat allocations matching chosen day
+        // 1. Fetch live time slot configurations matching the active grid day context
         fetch(BACKEND_WEBAPP_URL, {
             method: 'POST',
             body: JSON.stringify({ action: "getAvailability", sessionToken: secureUserSessionToken, date: selectedUserDateStr })
@@ -473,7 +455,7 @@
 
         let newHTML = "";
         TIME_SLOTS.forEach(slot => {
-            const rowMatch = activeFilteredLogs.find(l => l.slot.trim() === slot.trim() && l.bookingId !== "");
+            const rowMatch = activeFilteredLogs.find(l => (l.slot || "").trim() === slot.trim());
             const isPast = nowIST >= parseUIDateToAbsoluteObject(selectedUserDateStr, slot);
             
             let cardStyle = "bg-slate-950 border-slate-900 text-slate-300 hover:border-slate-800 cursor-pointer";
@@ -483,12 +465,19 @@
             if(isPast) {
                 cardStyle = "bg-slate-900/10 border-slate-950 text-slate-700 line-through cursor-not-allowed";
                 stateLabel = "Expired Slot"; action = "";
-            } else if(rowMatch) {
+            } else if(rowMatch && rowMatch.status === "BOOKED") {
                 let myOwnMatch = personalLedgerBookings.find(b => b.court === selectedUserAsset && b.date === selectedUserDateStr && b.slot === slot && b.status === "ACTIVE");
                 
-                cardStyle = myOwnMatch ? "bg-red-950/20 border-red-500 text-red-400 font-bold" : "bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed";
-                stateLabel = myOwnMatch ? "Your Session" : "Unavailable";
-                action = myOwnMatch ? `onclick="forceUserSelfRelease('${myOwnMatch.bookingId}')"` : "";
+                if (myOwnMatch) {
+                    cardStyle = "bg-red-950/20 border-red-500 text-red-400 font-bold shadow-inner";
+                    stateLabel = "🔒 Your Match";
+                    action = `onclick="forceUserSelfRelease('${myOwnMatch.bookingId}')"`;
+                } else {
+                    // ❄️ Frozen visual style freezes claims completely out for other profile logins
+                    cardStyle = "bg-slate-900/40 border-slate-800 text-slate-500 cursor-not-allowed filter brightness-75";
+                    stateLabel = "❄️ Frozen Slot";
+                    action = "";
+                }
             } else if(selectedTentativeSlotMemory === slot) {
                 cardStyle = "border-amber-400 bg-amber-950/10 text-amber-400 font-bold shadow-md";
                 stateLabel = "Selected Target Block";
@@ -503,7 +492,11 @@
 
     function renderUserPersonalLedgerUI() {
         const container = document.getElementById('userPersonalLedgerContainer'); if(!container) return;
-        container.innerHTML = ""; const nowIST = getNowLocalIST();
+        container.innerHTML = ""; 
+        const nowIST = getNowLocalIST();
+
+        // Establish an absolute target timestamp for today at midnight to accurately isolate calendar filters
+        const todayMidnight = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate(), 0, 0, 0, 0);
 
         let myParsedLogs = personalLedgerBookings.map(b => { 
            return { ...b, parsedTime: parseUIDateToAbsoluteObject(b.date, b.slot) }; 
@@ -511,21 +504,30 @@
 
         let targetedRows = myParsedLogs.filter(b => {
             if (b.status === "CANCELLED") return false;
-            return activeUserLogTab === "upcoming" ? b.parsedTime > nowIST && b.status === "ACTIVE" : b.parsedTime <= nowIST || b.status === "COMPLETED";
+            
+            // Keeps a same-day booking visible in upcoming folder tabs until the day has completely passed
+            if (activeUserLogTab === "upcoming") {
+                return b.status === "ACTIVE" && b.parsedTime >= todayMidnight;
+            } else {
+                return b.status === "COMPLETED" || b.parsedTime < todayMidnight;
+            }
         });
 
+        // 📅 DESCENDING CRITICAL SORT ENGINE (Newest matches render top-down date and time wise)
+        targetedRows.sort((a, b) => b.parsedTime.getTime() - a.parsedTime.getTime());
+
         if (targetedRows.length === 0) {
-            container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No records found matching this ledger view.</p>`;
+            container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No matching slots found in your folder tracking ledger.</p>`;
             return;
         }
 
         targetedRows.forEach(b => {
             let actionBtn = (activeUserLogTab === "upcoming" && b.status === "ACTIVE") 
-                ? `<button onclick="forceUserSelfRelease('${b.bookingId}')" class="text-[10px] bg-red-950/40 text-red-400 border border-red-900/40 px-2.5 py-1.5 rounded-lg font-black uppercase hover:bg-red-500 hover:text-slate-950 transition-all cursor-pointer">Cancel</button>` 
+                ? `<button onclick="forceUserSelfRelease('${b.bookingId}')" class="text-[10px] bg-red-950/40 text-red-400 border border-red-900/40 px-2.5 py-1.5 rounded-lg font-black uppercase hover:bg-red-500 hover:text-slate-950 transition-all cursor-pointer">Cancel Match</button>` 
                 : `<span class="text-[9px] bg-slate-950 text-slate-500 border border-slate-900 px-2 py-1 rounded font-black uppercase tracking-wide">${b.status}</span>`;
 
             container.innerHTML += `
-              <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-900">
+              <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-900 shadow-sm">
                 <div>
                   <h4 class="font-bold text-slate-200 text-xs">${b.court}</h4>
                   <p class="text-[10px] text-slate-400 font-mono mt-0.5">${b.date} | ${b.slot}</p>
@@ -537,36 +539,40 @@
 
     function renderGlobalClubTimelineUI() {
         const timelineBox = document.getElementById('viewGlobalClubTimeline'); if(!timelineBox) return;
-        const nowIST = getNowLocalIST();
-
-        let lockedGlobalBookings = matrixAvailabilityRecords.filter(b => b.bookingId !== "" && b.bookedBy !== "");
+        
+        // Extract matrix records marked booked by any occupant array index across the app channel
+        let lockedGlobalBookings = matrixAvailabilityRecords.filter(b => b.status === "BOOKED" || b.bookingId);
 
         if (lockedGlobalBookings.length === 0) {
-          timelineBox.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No other scheduled bookings registered for this date.</p>`;
+          timelineBox.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No active reservations secured for this date context.</p>`;
           return;
         }
 
-        lockedGlobalBookings.sort((a,b) => a.slot.localeCompare(b.slot));
+        // 📅 CHRONOLOGICAL LIVE PANEL ENGINE: Orders everything descending by target values (Newest first)
+        lockedGlobalBookings.sort((a, b) => {
+          const dateTimeA = new Date((a.date || selectedUserDateStr) + " " + (a.slot || "").split("-")[0]);
+          const dateTimeB = new Date((b.date || selectedUserDateStr) + " " + (b.slot || "").split("-")[0]);
+          return dateTimeB - dateTimeA; 
+        });
 
         let htmlString = "";
         lockedGlobalBookings.forEach(b => {
-          const isPast = nowIST >= parseUIDateToAbsoluteObject(selectedUserDateStr, b.slot);
-          if (isPast) return;
+          const displaySlot = b.slot || "--:--";
+          const displayUser = b.bookedBy || b.userName || "Club Member Session";
 
           htmlString += `
-            <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-900/80 font-medium">
+            <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-900/80 shadow-sm font-medium">
               <div>
                 <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${b.court.includes('Badminton') ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'}">${b.court}</span>
-                <p class="text-xs font-bold text-slate-200 mt-1.5">${b.bookedBy}</p>
+                <p class="text-xs font-bold text-slate-200 mt-2">${displayUser}</p>
               </div>
               <div class="text-right">
-                <span class="text-xs font-mono font-bold text-amber-400 block">${b.slot}</span>
-                <span class="text-[9px] text-slate-500 font-medium tracking-wide block mt-0.5">${b.date}</span>
+                <span class="text-xs font-mono font-bold text-amber-400 block">${displaySlot}</span>
+                <span class="text-[9px] text-slate-500 font-medium tracking-wide block mt-0.5">${b.date || selectedUserDateStr}</span>
               </div>
             </div>`;
         });
-
-        timelineBox.innerHTML = htmlString || `<p class="text-xs text-slate-500 text-center py-4">No upcoming matches remaining for this day.</p>`;
+        timelineBox.innerHTML = htmlString;
     }
 
     function toggleUserLogTab(tabKey) {
