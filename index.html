@@ -23,6 +23,11 @@
             <p class="text-xs text-amber-400 font-bold">Tokens: <span id="lblWorkspaceAvailableTokens">0</span></p>
         </div>
       </div>
+      <select id="courtSelector" onchange="syncUserLogsAndMatrix()" class="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs">
+          <option value="Pickleball Court 1">Pickleball Court 1</option>
+          <option value="Pickleball Court 2">Pickleball Court 2</option>
+          <option value="Badminton Court 1">Badminton Court 1</option>
+      </select>
       <div id="userTimeSlotMatrixGrid" class="grid grid-cols-2 gap-2"></div>
       <div id="userPersonalLedgerContainer" class="space-y-2"></div>
       <button onclick="executeLogoutSequence()" class="text-xs uppercase text-slate-500">Logout</button>
@@ -34,10 +39,7 @@
     let secureUserSessionToken = "";
     let matrixAvailabilityRecords = [];
 
-    // Local IST Date Helper
-    function getNowLocalIST() { 
-        return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); 
-    }
+    function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
     async function executeMemberLoginHandshake() {
         const email = document.getElementById('loginEmailField').value;
@@ -56,23 +58,10 @@
         } else { alert(res.message); }
     }
 
-    function renderUserMatrixGridUI() {
-        const grid = document.getElementById('userTimeSlotMatrixGrid');
-        grid.innerHTML = "";
-        matrixAvailabilityRecords.forEach(l => {
-            let isBooked = l.status === "BOOKED";
-            let label = isBooked ? ("❄️ " + l.bookedBy) : "Available";
-            let style = isBooked ? "bg-slate-800 text-slate-500" : "bg-red-950/20 text-red-400";
-            grid.innerHTML += `<div class="p-3 rounded-xl border ${style}">
-                <p class="text-xs font-mono">${l.slot}</p>
-                <p class="text-[9px] uppercase font-black">${label}</p>
-            </div>`;
-        });
-    }
-
     async function syncUserLogsAndMatrix() {
         const now = getNowLocalIST();
         const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const court = document.getElementById('courtSelector').value;
         
         const res = await fetch(BACKEND_WEBAPP_URL, {
             method: 'POST',
@@ -80,9 +69,48 @@
         }).then(r => r.json());
         
         if(res.success) {
-            matrixAvailabilityRecords = res.availability;
+            matrixAvailabilityRecords = res.availability.filter(a => a.court === court);
             renderUserMatrixGridUI();
         }
+    }
+
+    function renderUserMatrixGridUI() {
+        const grid = document.getElementById('userTimeSlotMatrixGrid');
+        grid.innerHTML = "";
+        matrixAvailabilityRecords.forEach(l => {
+            let isBooked = l.status === "BOOKED";
+            let label = isBooked ? ("❄️ " + l.bookedBy) : "Available";
+            let style = isBooked ? "bg-slate-800 text-slate-500" : "bg-red-950/20 text-red-400 cursor-pointer";
+            let clickAction = isBooked ? "" : `onclick="secureBooking('${l.slot}')"`;
+            
+            grid.innerHTML += `<div ${clickAction} class="p-3 rounded-xl border ${style}">
+                <p class="text-xs font-mono">${l.slot}</p>
+                <p class="text-[9px] uppercase font-black">${label}</p>
+            </div>`;
+        });
+    }
+
+    async function secureBooking(slot) {
+        const court = document.getElementById('courtSelector').value;
+        const now = getNowLocalIST();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        
+        const res = await fetch(BACKEND_WEBAPP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                action: "secureBooking", 
+                sessionToken: secureUserSessionToken, 
+                courtName: court, 
+                timeSlot: slot,
+                date: dateStr,
+                userName: document.getElementById('lblWorkspaceMemberName').innerText 
+            })
+        }).then(r => r.json());
+        
+        if(res.status === "success") {
+            alert("Booking secured!");
+            syncUserLogsAndMatrix();
+        } else { alert(res.message); }
     }
 
     function toggleView(view) {
@@ -90,10 +118,7 @@
         document.getElementById('viewWorkspacePanel').classList.toggle('hidden', view !== 'workspace');
     }
 
-    function executeLogoutSequence() {
-        localStorage.clear();
-        location.reload();
-    }
+    function executeLogoutSequence() { localStorage.clear(); location.reload(); }
   </script>
 </body>
 </html>
