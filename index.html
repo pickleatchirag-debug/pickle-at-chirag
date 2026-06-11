@@ -465,7 +465,7 @@
             if(isPast) {
                 cardStyle = "bg-slate-900/10 border-slate-950 text-slate-700 line-through cursor-not-allowed";
                 stateLabel = "Expired Slot"; action = "";
-            } else if(rowMatch && rowMatch.status === "BOOKED") {
+            } else if(rowMatch) {
                 let myOwnMatch = personalLedgerBookings.find(b => b.court === selectedUserAsset && b.date === selectedUserDateStr && b.slot === slot && b.status === "ACTIVE");
                 
                 if (myOwnMatch) {
@@ -541,7 +541,7 @@
         const timelineBox = document.getElementById('viewGlobalClubTimeline'); if(!timelineBox) return;
         
         // Extract matrix records marked booked by any occupant array index across the app channel
-        let lockedGlobalBookings = matrixAvailabilityRecords.filter(b => b.status === "BOOKED" || b.bookingId);
+        let lockedGlobalBookings = matrixAvailabilityRecords.filter(b => b.bookingId);
 
         if (lockedGlobalBookings.length === 0) {
           timelineBox.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No active reservations secured for this date context.</p>`;
