@@ -1,66 +1,58 @@
-const express = require('express');
-const path = require('path');
-const cors = require('cors');
-const fetch = require('node-fetch');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// 🔗 UPDATED: Your current operational deployment URL
-const GOOGLE_APPS_SCRIPT_URL = "const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";";
-
-app.use(cors());
-
-// CRITICAL EXTENSION — Support standard JSON as well as raw body string inputs seamlessly
-app.use(express.json());
-app.use(express.text({ type: '*/*' })); 
-
-app.use(express.static(path.join(__dirname)));
-
-/**
- * Universal Proxy Forwarder
- * Bypasses browser CORS policy restrictions cleanly via robust server-to-server text transfers.
- */
-async function forwardToAppsScriptProxy(rawPayloadString, expressResponse) {
-  try {
-    const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: {
-        "Content-Type": "text/plain"
-      },
-      body: rawPayloadString, // Forwards the raw string directly to prevent formatting drops
-      follow: 20 
-    });
-
-    const responseData = await response.json();
-    return expressResponse.json(responseData);
-
-  } catch (error) {
-    console.error("❌ Proxy pipeline breakdown: ", error);
-    return expressResponse.status(502).json({
-      success: false,
-      message: "Database synchronization gateway timeout."
-    });
+// 📄 ENHANCED IN-MEMORY DATA LOGS
+let BOOKING_RECORDS = [
+  {
+    booking_id: 'b_9921',
+    court_name: 'Pickleball Court 1',
+    sport_type: 'PICKLEBALL',
+    booked_by: 'Rahul Babbar',
+    player_email: 'rahul.babbar@gmail.com', // Added profile details
+    player_unit: 'A1',
+    date: getTodayFormattedIST(0),
+    time_slot: '18:00 - 19:00'
+  },
+  {
+    booking_id: 'b_9922',
+    court_name: 'Pickleball Court 2',
+    sport_type: 'PICKLEBALL',
+    booked_by: 'Kaveri Gulati',
+    player_email: 'kaveri.gulati@gmail.com',
+    player_unit: 'D4',
+    date: getTodayFormattedIST(0),
+    time_slot: '19:00 - 20:00'
   }
-}
+];
 
-// Intercepts gate execution calls and normalizes string states cleanly
-app.post('/api/gateway', (req, res) => {
-  // If express text parser already captured the string, use it; otherwise, stringify the JSON body object
-  const cleanPayloadString = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-  
-  forwardToAppsScriptProxy(cleanPayloadString, res);
-});
+// Enhanced Booking Lock Route
+app.post('/api/secure-booking', (req, requireRes) => {
+  const { courtName, sportType, userName, date, timeSlot, sessionToken } = req.body;
 
-// Fallback to route standard client interface frames
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+  if (!courtName || !date || !timeSlot || !sessionToken) {
+    return requireRes.status(400).json({ status: 'error', message: 'Missing core booking specifications.' });
+  }
 
-app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(` 🚀 CHIRAG SPORTS PORTAL PROXY ACTIVE (CORS ELIMINATED)`);
-  console.log(` 🔗 Connected Hub Target: ${GOOGLE_APPS_SCRIPT_URL}`);
-  console.log(` 🌐 Internal Port Loop listening on: ${PORT}`);
-  console.log(`====================================================`);
+  const collisionConflict = BOOKING_RECORDS.find(
+    b => b.court_name.toLowerCase() === courtName.toLowerCase() && b.date === date && b.time_slot === timeSlot
+  );
+
+  if (collisionConflict) {
+    return requireRes.status(409).json({ status: 'error', message: 'Collision block!' });
+  }
+
+  // Look up the logged-in user profile to extract email and unit details automatically
+  const base64Email = Buffer.from(sessionToken.replace('sess_', ''), 'base64').toString('ascii');
+  const activeUser = REGISTERED_USERS.find(u => u.google_email.toLowerCase() === base64Email.toLowerCase());
+
+  const newBookingId = `b_${Math.floor(1000 + Math.random() * 9000)}`;
+  BOOKING_RECORDS.push({
+    booking_id: newBookingId,
+    court_name: courtName,
+    sport_type: sportType || 'PICKLEBALL',
+    booked_by: userName || 'Resident Player',
+    player_email: activeUser ? activeUser.google_email : 'N/A',
+    player_unit: activeUser ? activeUser.unit_code : 'N/A',
+    date: date,
+    time_slot: timeSlot
+  });
+
+  requireRes.json({ status: 'success', bookingId: newBookingId });
 });

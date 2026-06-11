@@ -3,40 +3,249 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chirag Sports Portal — Entry Gate</title>
+  <title>Chirag Sports — Gate Access Desk</title>
+  
+  <link rel="manifest" href="/manifest.json?v=2.0.0">
+  <meta name="theme-color" content="#020617">
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    .radar-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .4; transform: scale(1.1); }
+    }
+  </style>
 </head>
-<body class="bg-[#0b0f19] text-slate-200 min-h-screen font-sans flex items-center justify-center p-4">
-  <div class="bg-[#111625] p-6 rounded-2xl border border-slate-800/80 shadow-2xl max-w-sm w-full space-y-5">
-    <div class="text-center space-y-1.5">
-      <div class="inline-flex bg-amber-500/10 border border-amber-500/20 p-3 rounded-2xl text-2xl mb-1 text-amber-400">🛡️</div>
-      <h2 class="text-xs font-black tracking-widest uppercase text-amber-400">Security Access Gate</h2>
-      <p class="text-base font-black text-slate-100 tracking-tight">Verify Your Member Invitation</p>
-      <p class="text-[11px] text-slate-400 font-medium">Please enter your whitelisted Google email to unlock account registration panels.</p>
-    </div>
-    <div class="space-y-3.5">
-      <div class="space-y-1">
-        <label class="text-[10px] font-black uppercase text-slate-400 block">Google Email Address</label>
-        <input type="email" id="txtGateVerifyEmail" placeholder="yourname@gmail.com" class="w-full bg-[#070a12] border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-400 text-slate-100 font-mono">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col justify-between overflow-hidden relative">
+
+  <header class="bg-slate-900 border-b border-slate-800 p-6 shadow-xl">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-4">
+        <div class="bg-cyan-500/10 border border-cyan-500/30 p-3 rounded-2xl text-2xl">
+          🚧
+        </div>
+        <div>
+          <h1 class="text-xs font-black tracking-[0.25em] uppercase text-cyan-400">Club Entrance Gate</h1>
+          <h2 class="text-2xl font-black text-white tracking-tight mt-0.5">Live Schedule Matrix</h2>
+        </div>
       </div>
-      <button onclick="executeGateVerificationCheck()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer">Verify Invite Clearance</button>
+      
+      <div class="flex items-center space-x-6 bg-slate-950 px-5 py-3 rounded-2xl border border-slate-800/80 shadow-md">
+        <div class="text-right">
+          <p id="gateLiveDateStr" class="text-xs font-black uppercase text-slate-400 tracking-wider">--/--/----</p>
+          <p id="gateLiveClockStr" class="text-xl font-mono font-black text-amber-400 mt-0.5">00:00:00</p>
+        </div>
+        <div class="h-8 w-px bg-slate-800"></div>
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-500 radar-pulse shadow-[0_0_12px_rgba(16,185,129,0.4)]"></span>
+          <span class="text-[10px] uppercase font-black tracking-widest text-emerald-400">Sync Active</span>
+        </div>
+      </div>
     </div>
-    <div class="text-center pt-3 border-t border-slate-800/40 text-xs"><p class="text-slate-500">Already registered? <a href="/index.html" class="text-cyan-400 font-bold hover:underline">Log in here</a></p></div>
+  </header>
+
+  <main class="max-w-7xl mx-auto w-full flex-1 p-6 overflow-y-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl p-5 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">🏓</span>
+            <h3 class="text-sm font-black uppercase tracking-wider text-slate-200">Pickleball Court 1</h3>
+          </div>
+          <span class="text-[9px] bg-red-950/40 text-red-400 border border-red-900/40 px-2 py-0.5 rounded-lg font-black tracking-wide uppercase">PB-01</span>
+        </div>
+        <div id="matrixContainer-pb1" class="space-y-3 max-h-[620px] overflow-y-auto pr-1"></div>
+      </div>
+
+      <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl p-5 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">🏓</span>
+            <h3 class="text-sm font-black uppercase tracking-wider text-slate-200">Pickleball Court 2</h3>
+          </div>
+          <span class="text-[9px] bg-amber-950/40 text-amber-400 border border-amber-900/40 px-2 py-0.5 rounded-lg font-black tracking-wide uppercase">PB-02</span>
+        </div>
+        <div id="matrixContainer-pb2" class="space-y-3 max-h-[620px] overflow-y-auto pr-1"></div>
+      </div>
+
+      <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl p-5 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">🏸</span>
+            <h3 class="text-sm font-black uppercase tracking-wider text-slate-200">Badminton Court 1</h3>
+          </div>
+          <span class="text-[9px] bg-cyan-950/40 text-cyan-400 border border-cyan-900/40 px-2 py-0.5 rounded-lg font-black tracking-wide uppercase">BD-01</span>
+        </div>
+        <div id="matrixContainer-bd1" class="space-y-3 max-h-[620px] overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="memberDetailModalOverlay" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onclick="closeMemberVerificationModal()">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2">
+          <span class="text-emerald-400 text-lg">🛡️</span>
+          <h3 class="text-sm font-black uppercase tracking-wider text-slate-200">Gate Access Verification</h3>
+        </div>
+        <button onclick="closeMemberVerificationModal()" class="text-slate-500 hover:text-white font-mono text-xs bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800⭐">ESC</button>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-900 space-y-1">
+          <span class="text-[9px] uppercase font-black text-slate-500 tracking-wider block">Scheduled Player</span>
+          <p id="modalMemberName" class="text-xl font-black text-white">--</p>
+        </div>
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-900 space-y-1">
+          <span class="text-[9px] uppercase font-black text-slate-500 tracking-wider block">Assigned Court Location</span>
+          <p id="modalMemberCourt" class="text-sm font-bold text-amber-400">--</p>
+        </div>
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-900 space-y-1">
+          <span class="text-[9px] uppercase font-black text-slate-500 tracking-wider block">Reserved Time Block</span>
+          <p id="modalMemberSlot" class="text-sm font-mono font-bold text-cyan-400">--</p>
+        </div>
+      </div>
+      <button onclick="closeMemberVerificationModal()" class="w-full bg-slate-950 border border-slate-800 text-slate-300 font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest hover:text-white tracking-widest transition-all">
+        Approve Entry & Close
+      </button>
+    </div>
   </div>
+
+  <footer class="bg-slate-950 text-center py-4 text-[10px] text-slate-600 font-bold tracking-wider border-t border-slate-900">
+    CHIRAG SPORTS INDOOR AUTOMATION FRAMEWORK &bull; REFRESH INTERVAL LOOP SECURED EVERY 3000MS
+  </footer>
+
   <script>
-    function executeGateVerificationCheck() {
-        const email = document.getElementById('txtGateVerifyEmail').value.toLowerCase().trim();
-        if(!email || !email.includes('@')) return alert("Please enter a valid Google email address format.");
-        fetch('/api/gate-verify-whitelist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
-        .then(r => r.json()).then(res => {
-            if (res.status === "success") {
-                alert(`✓ Clearance Confirmed! Unit Code: ${res.code}. Opening register form panel fields.`);
-                sessionStorage.setItem('gate_verified_email', email);
-                sessionStorage.setItem('gate_verified_code', res.code);
-                window.location.href = "/index.html?action=register";
-            } else { alert(res.message); }
+    const TARGET_TIME_SLOTS = [
+      "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", 
+      "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00", 
+      "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", 
+      "19:00 - 20:00", "20:00 - 21:00"
+    ];
+    let cachedServerRecordsMemory = [];
+
+    function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
+    
+    function getTodayFormattedIST() {
+      const now = getNowLocalIST();
+      return `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+    }
+
+    function executeClockPulse() {
+      const now = getNowLocalIST();
+      document.getElementById('gateLiveClockStr').innerText = now.toTimeString().split(' ')[0];
+      document.getElementById('gateLiveDateStr').innerText = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+    setInterval(executeClockPulse, 1000);
+    executeClockPulse();
+
+    function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
+        try {
+            const [d, m, y] = dateStr.split('/');
+            const [startHourStr] = timeSlotStr.split(' - ');
+            const [hour, minutes] = startHourStr.split(':');
+            return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
+        } catch(e) { return new Date(); }
+    }
+
+    function syncGateLogsMatrix() {
+      const todayISTStr = getTodayFormattedIST();
+      const nowIST = getNowLocalIST();
+
+      fetch('/api/fetch-logs', { method: 'POST' })
+        .then(r => r.json())
+        .then(res => {
+          cachedServerRecordsMemory = res.records || [];
+          
+          const columns = {
+            'pb1': { container: document.getElementById('matrixContainer-pb1'), keyword: 'pickleball court 1' },
+            'pb2': { container: document.getElementById('matrixContainer-pb2'), keyword: 'pickleball court 2' },
+            'bd1': { container: document.getElementById('matrixContainer-bd1'), keyword: 'badminton court 1' }
+          };
+
+          Object.keys(columns).forEach(key => {
+            const currentColumn = columns[key];
+            let targetHtml = "";
+
+            const activeSlots = cachedServerRecordsMemory.filter(r => 
+              r.court_name.toLowerCase().trim() === currentColumn.keyword && 
+              sanitizeDateString(r.date) === todayISTStr
+            );
+
+            TARGET_TIME_SLOTS.forEach(slot => {
+              const matchedBooking = activeSlots.find(s => s.time_slot.trim() === slot.trim());
+              const isPastSlot = nowIST >= parseUIDateToAbsoluteObject(todayISTStr, slot);
+
+              let cardStyle = "border-slate-800 bg-slate-950 text-slate-400";
+              let badgeStyle = "bg-slate-900 text-slate-600 border-slate-800";
+              let statusLabel = "OPEN CELL";
+              let playerName = "— Available Session —";
+              let actionClickHook = "";
+
+              if (isPastSlot) {
+                cardStyle = "border-slate-950 bg-slate-950/30 text-slate-700 opacity-40 line-through";
+                badgeStyle = "bg-slate-950 text-slate-800 border-transparent";
+                statusLabel = "EXPIRED";
+                playerName = matchedBooking ? matchedBooking.booked_by : "No Bookings";
+              } else if (matchedBooking) {
+                statusLabel = "OCCUPIED";
+                playerName = matchedBooking.booked_by;
+                cardStyle = "border-cyan-500/40 bg-gradient-to-r from-cyan-950/20 to-slate-950 text-slate-200 shadow-md cursor-pointer hover:border-cyan-400 transition-all";
+                badgeStyle = "bg-cyan-950 text-cyan-400 border-cyan-800/40 font-black animate-pulse";
+                actionClickHook = `onclick="openMemberVerificationModal('${matchedBooking.booking_id}')"`;
+              }
+
+              targetHtml += `
+                <div ${actionClickHook} class="border p-3.5 rounded-2xl flex flex-col justify-between items-start space-y-1.5 transition-all ${cardStyle}">
+                  <div class="w-full flex justify-between items-center">
+                    <span class="text-xs font-mono font-black tracking-wide">${slot}</span>
+                    <span class="text-[8px] border px-2 py-0.5 rounded-md font-black tracking-widest uppercase ${badgeStyle}">${statusLabel}</span>
+                  </div>
+                  <div class="w-full">
+                    <p class="text-sm font-black tracking-tight ${matchedBooking && !isPastSlot ? 'text-white' : ''}">${playerName}</p>
+                  </div>
+                </div>`;
+            });
+
+            currentColumn.container.innerHTML = targetHtml;
+          });
         });
     }
+
+    function openMemberVerificationModal(bookingId) {
+      const match = cachedServerRecordsMemory.find(b => b.booking_id === bookingId);
+      if(!match) return;
+
+      document.getElementById('modalMemberName').innerText = match.booked_by;
+      document.getElementById('modalMemberCourt').innerText = match.court_name;
+      document.getElementById('modalMemberSlot').innerText = match.time_slot;
+      
+      document.getElementById('memberDetailModalOverlay').classList.remove('hidden');
+    }
+
+    function closeMemberVerificationModal() {
+      document.getElementById('memberDetailModalOverlay').classList.add('hidden');
+    }
+
+    function sanitizeDateString(input) {
+      if(!input) return "";
+      let str = input.toString().trim();
+      if(str.includes('T')) {
+          let d = new Date(str);
+          if(!isNaN(d.getTime())) {
+              let localIST = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+              return `${String(localIST.getDate()).padStart(2,'0')}/${String(localIST.getMonth()+1).padStart(2,'0')}/${localIST.getFullYear()}`;
+          }
+      }
+      return str;
+    }
+
+    syncGateLogsMatrix();
+    setInterval(syncGateLogsMatrix, 3000);
   </script>
 </body>
 </html>

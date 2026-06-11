@@ -1,0 +1,77 @@
+function doPost(e) {
+  try {
+    var requestData = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(requestData.tabName);
+    
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Tab sheet not found: " + requestData.tabName })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // ACTION LAYER 1: FORCE ROW UPDATE ENGINE
+    if (requestData.action === "updateRow") {
+      var data = sheet.getDataRange().getValues();
+      var headers = data[0].map(function(h) { return h.toString().toLowerCase().trim(); });
+      
+      var keyIdx = headers.indexOf(requestData.keyColumn.toLowerCase().trim());
+      var updateIdx = headers.indexOf(requestData.updateColumn.toLowerCase().trim());
+      
+      if (keyIdx === -1 || updateIdx === -1) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Header alignment mismatch inside Sheet columns." })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var matchFound = false;
+      for (var i = 1; i < data.length; i++) {
+        if (data[i][keyIdx].toString().toLowerCase().trim() === requestData.keyValue.toString().toLowerCase().trim()) {
+          sheet.getRange(i + 1, updateIdx + 1).setValue(requestData.updateValue);
+          matchFound = true;
+        }
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({ status: matchFound ? "success" : "error", message: "Email row not matched inside directory." })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // ACTION LAYER 2: DELETE ROW INTERFACE
+    if (requestData.action === "deleteRow") {
+      var data = sheet.getDataRange().getValues();
+      var headers = data[0].map(function(h) { return h.toString().toLowerCase().trim(); });
+      var keyColumnIndex = headers.indexOf(requestData.keyColumn.toLowerCase().trim());
+      
+      for (var i = data.length - 1; i >= 1; i--) {
+        if (data[i][keyColumnIndex].toString().trim() === requestData.keyValue.toString().trim()) {
+          sheet.deleteRow(i + 1);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "success" })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // ACTION LAYER 3: APPENDS NEW ENTRIES
+    sheet.appendRow(requestData.data);
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  var action = e.parameter.action;
+  var tabName = e.parameter.tabName;
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(tabName);
+  
+  if (!sheet) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+  
+  if (action === "readTab") {
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var jsonData = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var obj = {};
+      for (var j = 0; j < headers.length; j++) { obj[headers[j]] = row[j]; }
+      jsonData.push(obj);
+    }
+    return ContentService.createTextOutput(JSON.stringify(jsonData)).setMimeType(ContentService.MimeType.JSON);
+  }
+}
