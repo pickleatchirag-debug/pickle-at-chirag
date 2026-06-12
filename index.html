@@ -36,10 +36,11 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
+        // 🧼 FORCE SERVICE WORKER TO RE-FETCH TO UPDATE THE VAULT
         navigator.serviceWorker.register("/service-worker.js?v=2.0.0")
           .then(reg => {
             console.log("✓ Mobile App Engine Active.");
-            reg.update();
+            reg.update(); // Automatically update in the background if a change is detected
           })
           .catch(err => console.log("× Service Engine Error: ", err));
       });
@@ -287,32 +288,22 @@
 
     function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
-    // 🎯 STRIPS CONFUSING LEADING ZEROS (Makes 12/06 vs 12/6 evaluation bulletproof)
     function sanitizeUIDate(input) {
         if(!input) return "";
-        let str = input.toString().trim().split(' ')[0].split('T')[0];
-        str = str.replace(/-/g, '/');
-        
-        let parts = str.split('/');
-        if (parts.length === 3) {
-            let day = parseInt(parts[0], 10);
-            let month = parseInt(parts[1], 10);
-            let year = parts[2];
-            
-            if (parts[0].length === 4) {
-                year = parts[0];
-                month = parseInt(parts[1], 10);
-                day = parseInt(parts[2], 10);
+        let str = input.toString().trim();
+        if(str.includes('T')) {
+            let d = new Date(str);
+            if(!isNaN(d.getTime())) {
+                let localIST = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+                return `${String(localIST.getDate()).padStart(2,'0')}/${String(localIST.getMonth()+1).padStart(2,'0')}/${localIST.getFullYear()}`;
             }
-            return `${day}/${month}/${year}`;
         }
         return str;
     }
 
     function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
         try {
-            const cleanDate = sanitizeUIDate(dateStr);
-            const [d, m, y] = cleanDate.split('/');
+            const [d, m, y] = dateStr.split('/');
             const [startHourStr] = timeSlotStr.split(' - ');
             const [hour, minutes] = startHourStr.split(':');
             return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
@@ -453,7 +444,7 @@
            dates.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`);
            if(i === 0 && !selectedUserDateStr) selectedUserDateStr = dates[0];
            
-           let isSel = sanitizeUIDate(selectedUserDateStr) === sanitizeUIDate(dates[i]);
+           let isSel = selectedUserDateStr === dates[i];
            box.innerHTML += `
              <div onclick="switchUserDateAsset('${dates[i]}')" class="border text-center flex-1 p-2 rounded-xl cursor-pointer transition-all ${isSel?'border-red-500 bg-red-950/20 text-red-400 font-bold':'border-slate-800 bg-slate-900 text-slate-400'}">
                 <p class="text-[9px] uppercase font-black">${days[d.getDay()]}</p>
@@ -477,12 +468,7 @@
         const grid = document.getElementById('userTimeSlotMatrixGrid'); if(!grid) return;
         const nowIST = getNowLocalIST();
         const targetToken = extractNormalizedAssetToken(selectedUserAsset);
-        
-        const sanitizedSelectedDate = sanitizeUIDate(selectedUserDateStr);
-        const activeFilteredLogs = userActiveBookingsLogs.filter(l => 
-            extractNormalizedAssetToken(l.court_name) === targetToken && 
-            sanitizeUIDate(l.date) === sanitizedSelectedDate
-        );
+        const activeFilteredLogs = userActiveBookingsLogs.filter(l => extractNormalizedAssetToken(l.court_name) === targetToken && sanitizeUIDate(l.date) === selectedUserDateStr);
 
         let newHTML = "";
         TIME_SLOTS.forEach(slot => {
@@ -503,7 +489,7 @@
                     stateLabel = "Your Locked Session";
                     action = `onclick="forceUserSelfRelease('${rowMatch.booking_id}')"`;
                 } else {
-                    // 🔒 HARD BOUNDARY LOCK: Strictly forces other users' booked slots to freeze as an immutable "Booked" item.
+                    // 🔒 TARGET FIX: Hard-lock other members' cards and clearly output 'Booked' label
                     cardStyle = "bg-slate-900 border-slate-950 text-slate-600 cursor-not-allowed opacity-40";
                     stateLabel = "Booked";
                     action = "";
@@ -594,7 +580,6 @@
         });
     }
 
-    // Tab switcher layout tracking layers
     function toggleUserLogTab(tabKey) {
         activeUserLogTab = tabKey;
         document.getElementById('tabUserLogUpcoming').className = tabKey === 'upcoming' ? 'text-emerald-400 underline decoration-2 underline-offset-4 font-black cursor-pointer' : 'text-slate-500 cursor-pointer';
