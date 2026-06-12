@@ -20,7 +20,7 @@
   <header class="bg-slate-900 border-b border-slate-800 p-4 sm:p-6 shadow-xl sticky top-0 z-50">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center space-x-4">
-        <div class="bg-cyan-500/10 border border-cyan-500/30 p-3 rounded-2xl text-2xl shadow-inner animate-pulse">🚧</div>
+        <div class="bg-cyan-500/10 border border-cyan-500/30 p-3 rounded-2xl text-2xl shadow-inner">🚧</div>
         <div>
           <h1 class="text-xs font-black tracking-[0.25em] uppercase text-cyan-400">Club Entrance Gate</h1>
           <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5">Live Schedule Matrix</h2>
@@ -97,7 +97,7 @@
   </div>
 
   <footer class="text-center text-[10px] text-slate-600 font-medium tracking-wide py-2 border-t border-slate-900/60 bg-slate-950">
-    Chirag Sports Gate Signage Interface &bull; Public Monitoring Protocol Active
+    Chirag Sports Gate Signage Interface &bull; Upcoming Records Protocol Active
   </footer>
 
   <script>
@@ -141,8 +141,8 @@
     function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
       try {
         const [d, m, y] = dateStr.split('/');
-        const [startHourStr] = timeSlotStr.split(' - ');
-        const [hour, minutes] = startHourStr.split(':');
+        const [, endHourStr] = timeSlotStr.split(' - '); // Look at the END of the hour block
+        const [hour, minutes] = endHourStr.split(':');
         return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
       } catch(e) { return new Date(); }
     }
@@ -172,6 +172,7 @@
           Object.keys(columns).forEach(key => {
             const currentColumn = columns[key];
             let targetHtml = "";
+            let hasVisibleSlots = false;
 
             const activeSlots = cachedServerRecordsMemory.filter(r => 
               extractNormalizedAssetToken(r.court_name) === currentColumn.token && 
@@ -179,24 +180,24 @@
             );
 
             TARGET_TIME_SLOTS.forEach(slot => {
-              const matchedBooking = activeSlots.find(s => s.time_slot.trim() === slot.trim());
               const isPastSlot = nowIST >= parseUIDateToAbsoluteObject(todayISTStr, slot);
+              
+              // 🚫 SKIP ALL PAST SLOTS EXACTLY LIKE THE MEMBERS APP MATRIX DOES!
+              if (isPastSlot) return; 
 
-              let cardStyle = "border-slate-900 bg-slate-950 text-slate-500 opacity-60";
+              hasVisibleSlots = true;
+              const matchedBooking = activeSlots.find(s => s.time_slot.trim() === slot.trim());
+
+              let cardStyle = "border-slate-800 bg-slate-950 text-slate-500 opacity-60";
               let badgeStyle = "bg-slate-900 text-slate-600 border-slate-800/60";
               let statusLabel = "AVAILABLE";
               let playerName = "— Vacant —";
               let actionClickHook = "";
 
-              if (isPastSlot) {
-                cardStyle = "border-slate-950 bg-slate-950/10 text-slate-700 opacity-20 line-through";
-                badgeStyle = "bg-slate-950 text-slate-800 border-transparent";
-                statusLabel = "PAST";
-                playerName = matchedBooking ? matchedBooking.booked_by : "No Match";
-              } else if (matchedBooking) {
+              if (matchedBooking) {
                 statusLabel = "RESERVED";
                 playerName = matchedBooking.booked_by;
-                cardStyle = "border-cyan-500/30 bg-gradient-to-r from-cyan-950/10 to-slate-950 text-slate-200 shadow-lg cursor-pointer hover:border-cyan-400/60 transition-all";
+                cardStyle = "border-cyan-500/30 bg-gradient-to-r from-cyan-950/20 to-slate-950 text-slate-200 shadow-lg cursor-pointer hover:border-cyan-400/60 transition-all";
                 badgeStyle = "bg-cyan-950/80 text-cyan-400 border-cyan-800/40 font-black animate-pulse";
                 actionClickHook = `onclick="openMemberVerificationModal('${matchedBooking.booking_id}')"`;
               }
@@ -204,20 +205,28 @@
               targetHtml += `
                 <div ${actionClickHook} class="border p-3 rounded-2xl flex flex-col justify-between items-start space-y-1.5 transition-all ${cardStyle}">
                   <div class="w-full flex justify-between items-center">
-                    <span class="text-xs font-mono font-bold tracking-wide">${slot}</span>
+                    <span class="text-xs font-mono font-black tracking-wide">${slot}</span>
                     <span class="text-[8px] border px-2 py-0.5 rounded-md font-black tracking-widest uppercase ${badgeStyle}">${statusLabel}</span>
                   </div>
                   <p class="text-sm font-black tracking-tight">${playerName}</p>
                 </div>`;
             });
+
+            if (!hasVisibleSlots) {
+              targetHtml = `
+                <div class="border border-dashed border-slate-800 p-8 rounded-2xl text-center text-slate-600 text-xs font-bold">
+                  📭 All schedules completed for today.
+                </div>`;
+            }
+
             currentColumn.container.innerHTML = targetHtml;
           });
         })
-        .catch(e => console.log("Gate data endpoint sync refresh pause..."));
+        .catch(e => console.log("Gate matrix connection update skip..."));
     }
 
     syncGateLogsMatrix(); 
-    setInterval(syncGateLogsMatrix, 4000); // Perfectly mapped to your server.js background intervals
+    setInterval(syncGateLogsMatrix, 4000);
   </script>
 </body>
 </html>
