@@ -7,22 +7,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🎯 ACTIVE GOOGLE WEB APP EXTENSION DEPLOYMENT EXEC LINK ADDRESS
+// 🎯 PASTE YOUR LIVE GOOGLE SCRIPT WEB APP EXTENSION LINK HERE HERE
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
 // Master memory storage registries synced directly to your spreadsheet
 let REGISTERED_USERS = [];
 let BOOKING_RECORDS = [];
-
-// Helper to sanitize asset string variation name blocks safely
-function standardizeCourtAssetName(name) {
-    if (!name) return "";
-    let str = name.toString().toLowerCase().trim();
-    if (str.includes("pickleball court 1") || str === "pb court 1") return "Pickleball Court 1";
-    if (str.includes("pickleball court 2") || str === "pb court 2") return "Pickleball Court 2";
-    if (str.includes("badminton court 1") || str === "bd court 1") return "Badminton Court 1";
-    return name;
-}
 
 // 🔄 SYNC PIPELINE RUNTIME ENGINE LOOP (Aligned perfectly with Code.gs getSnapshot)
 async function syncDatabaseMemoryPool() {
@@ -33,19 +23,14 @@ async function syncDatabaseMemoryPool() {
     const data = await response.json();
     
     if (data.users) REGISTERED_USERS = data.users;
-    
-    // Normalizes oncoming database strings to prevent screen freeze skips cleanly
-    if (data.bookings) {
-        BOOKING_RECORDS = data.bookings.map(b => {
-            return { ...b, court_name: standardizeCourtAssetName(b.court_name) };
-        });
-    }
+    if (data.bookings) BOOKING_RECORDS = data.bookings;
     
     console.log(`⚡ Sync complete. Users loaded: ${REGISTERED_USERS.length} | Active Bookings: ${BOOKING_RECORDS.length}`);
   } catch (e) {
     console.log("Database Sync Connection Pause... Retrying structural stream:", e.message);
   }
 }
+// Keep data perfectly fresh by polling every 4 seconds
 setInterval(syncDatabaseMemoryPool, 4000);
 syncDatabaseMemoryPool();
 
@@ -106,15 +91,13 @@ app.post('/api/fetch-logs', (req, res) => {
 app.post('/api/secure-booking', async (req, res) => {
   try {
     const bookingId = `b_${Math.floor(1000 + Math.random() * 9000)}`;
-    const standardizedCourt = standardizeCourtAssetName(req.body.courtName);
-    
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: "secureBooking",
         bookingId: bookingId,
-        courtName: standardizedCourt,
+        courtName: req.body.courtName,
         sportType: req.body.sportType,
         userName: req.body.userName,
         date: req.body.date,
