@@ -7,8 +7,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🎯 PASTE YOUR LIVE GOOGLE SCRIPT WEB APP EXTENSION LINK HERE HERE
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
+// 🎯 SECURE ACTIVE GOOGLE WEB APP EXEC LINK STRINGS
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXPrUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
 // Master memory storage registries synced directly to your spreadsheet
 let REGISTERED_USERS = [];
@@ -131,4 +131,5 @@ app.post('/api/release-booking', async (req, res) => {
   }
 });
 
+app.use(express.static(__dirname));
 app.listen(3000, () => console.log('Chirag Sports Core Server Engine running on port 3000.'));
