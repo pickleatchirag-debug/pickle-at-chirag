@@ -36,11 +36,10 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        // 🧼 FORCE SERVICE WORKER TO RE-FETCH TO UPDATE THE VAULT
         navigator.serviceWorker.register("/service-worker.js?v=2.0.0")
           .then(reg => {
             console.log("✓ Mobile App Engine Active.");
-            reg.update(); // Automatically update in the background if a change is detected
+            reg.update();
           })
           .catch(err => console.log("× Service Engine Error: ", err));
       });
@@ -82,6 +81,7 @@
 
   <main class="p-4 max-w-xl mx-auto w-full flex-1 flex flex-col justify-center">
     
+    <!-- AUTH GATEWAY: LOGIN -->
     <div id="viewLoginPanel" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
       <div class="text-center space-y-1">
         <h2 class="text-xs font-black tracking-widest uppercase text-red-500">Welcome Back</h2>
@@ -106,6 +106,7 @@
       </div>
     </div>
 
+    <!-- AUTH GATEWAY: REGISTER -->
     <div id="viewRegisterPanel" class="hidden bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
       <div class="text-center space-y-1">
         <h2 class="text-xs font-black tracking-widest uppercase text-amber-500">Create Member Password</h2>
@@ -137,6 +138,7 @@
       </div>
     </div>
 
+    <!-- AUTH GATEWAY: RESET -->
     <div id="viewResetPanel" class="hidden bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
       <div class="text-center space-y-1">
         <h2 class="text-xs font-black tracking-widest uppercase text-cyan-400">Secure Password Reset</h2>
@@ -164,6 +166,7 @@
       </div>
     </div>
 
+    <!-- MAIN DASHBOARD SYSTEM VIEW -->
     <div id="viewWorkspacePanel" class="hidden space-y-6">
       <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex justify-between items-center shadow-lg">
          <div class="flex items-center space-x-3">
@@ -288,22 +291,37 @@
 
     function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
-    function sanitizeUIDate(input) {
-        if(!input) return "";
-        let str = input.toString().trim();
-        if(str.includes('T')) {
-            let d = new Date(str);
-            if(!isNaN(d.getTime())) {
-                let localIST = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-                return `${String(localIST.getDate()).padStart(2,'0')}/${String(localIST.getMonth()+1).padStart(2,'0')}/${localIST.getFullYear()}`;
+    // 🎯 ROBUST STANDARDIZED DATE NORMALIZATION ENGINE TO PREVENT MISMATCHES
+    function normalizeToStandardStringDate(inputStr) {
+        if (!inputStr) return "";
+        let clean = inputStr.toString().trim().split('T')[0];
+        
+        // If string contains slashes, parse elements directly
+        if (clean.includes('/')) {
+            let components = clean.split('/');
+            if (components[0].length === 4) {
+                // yyyy/mm/dd -> convert to standard dd/mm/yyyy
+                return `${String(components[2]).padStart(2,'0')}/${String(components[1]).padStart(2,'0')}/${components[0]}`;
             }
+            // dd/mm/yyyy or d/m/yyyy -> force two-digit leading zero pad format configuration elements
+            return `${String(components[0]).padStart(2,'0')}/${String(components[1]).padStart(2,'0')}/${components[2]}`;
         }
-        return str;
+        
+        // If string contains dash structure format tokens (yyyy-mm-dd)
+        if (clean.includes('-')) {
+            let parts = clean.split('-');
+            if (parts[0].length === 4) {
+                return `${String(parts[2]).padStart(2,'0')}/${String(parts[1]).padStart(2,'0')}/${parts[0]}`;
+            }
+            return `${String(parts[0]).padStart(2,'0')}/${String(parts[1]).padStart(2,'0')}/${parts[2]}`;
+        }
+        return clean;
     }
 
     function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
         try {
-            const [d, m, y] = dateStr.split('/');
+            const normalized = normalizeToStandardStringDate(dateStr);
+            const [d, m, y] = normalized.split('/');
             const [startHourStr] = timeSlotStr.split(' - ');
             const [hour, minutes] = startHourStr.split(':');
             return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
@@ -444,7 +462,7 @@
            dates.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`);
            if(i === 0 && !selectedUserDateStr) selectedUserDateStr = dates[0];
            
-           let isSel = selectedUserDateStr === dates[i];
+           let isSel = normalizeToStandardStringDate(selectedUserDateStr) === normalizeToStandardStringDate(dates[i]);
            box.innerHTML += `
              <div onclick="switchUserDateAsset('${dates[i]}')" class="border text-center flex-1 p-2 rounded-xl cursor-pointer transition-all ${isSel?'border-red-500 bg-red-950/20 text-red-400 font-bold':'border-slate-800 bg-slate-900 text-slate-400'}">
                 <p class="text-[9px] uppercase font-black">${days[d.getDay()]}</p>
@@ -464,11 +482,18 @@
         syncUserLogsAndMatrix();
     }
 
+    // 🔒 COMPLETE BOUNDARY SLOT-LOCKING ENFORCEMENT GRID MATRIX
     function renderUserMatrixGridUI() {
         const grid = document.getElementById('userTimeSlotMatrixGrid'); if(!grid) return;
         const nowIST = getNowLocalIST();
         const targetToken = extractNormalizedAssetToken(selectedUserAsset);
-        const activeFilteredLogs = userActiveBookingsLogs.filter(l => extractNormalizedAssetToken(l.court_name) === targetToken && sanitizeUIDate(l.date) === selectedUserDateStr);
+        
+        // Standardized date evaluation loops to bypass forward-slash string mismatches safely
+        const targetSelectedChronoDate = normalizeToStandardStringDate(selectedUserDateStr);
+        const activeFilteredLogs = userActiveBookingsLogs.filter(l => 
+            extractNormalizedAssetToken(l.court_name) === targetToken && 
+            normalizeToStandardStringDate(l.date) === targetSelectedChronoDate
+        );
 
         let newHTML = "";
         TIME_SLOTS.forEach(slot => {
@@ -489,7 +514,7 @@
                     stateLabel = "Your Locked Session";
                     action = `onclick="forceUserSelfRelease('${rowMatch.booking_id}')"`;
                 } else {
-                    // 🔒 TARGET FIX: Hard-lock other members' cards and clearly output 'Booked' label
+                    // 🔒 HARD-LOCK ASSIGNED: Other users' slots flip to an immutable opacity-state and write "Booked"
                     cardStyle = "bg-slate-900 border-slate-950 text-slate-600 cursor-not-allowed opacity-40";
                     stateLabel = "Booked";
                     action = "";
@@ -512,7 +537,7 @@
 
         let myParsedLogs = userActiveBookingsLogs
             .filter(b => b.booked_by === sessionMemberProfile.full_name)
-            .map(b => { return { ...b, parsedTime: parseUIDateToAbsoluteObject(sanitizeUIDate(b.date), b.time_slot) }; });
+            .map(b => { return { ...b, parsedTime: parseUIDateToAbsoluteObject(b.date, b.time_slot) }; });
 
         let targetedRows = myParsedLogs.filter(b => {
             return activeUserLogTab === "upcoming" ? b.parsedTime > nowIST : b.parsedTime <= nowIST;
@@ -535,7 +560,7 @@
               <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-900">
                 <div>
                   <h4 class="font-bold text-slate-200 text-xs">${b.court_name}</h4>
-                  <p class="text-[10px] text-slate-400 font-mono mt-0.5">${sanitizeUIDate(b.date)} | ${b.time_slot}</p>
+                  <p class="text-[10px] text-slate-400 font-mono mt-0.5">${normalizeToStandardStringDate(b.date)} | ${b.time_slot}</p>
                 </div>
                 ${actionBtn}
               </div>`;
@@ -548,7 +573,7 @@
         const nowIST = getNowLocalIST();
 
         let activeGlobalMatches = userActiveBookingsLogs.map(b => {
-            return { ...b, absoluteMatchTime: parseUIDateToAbsoluteObject(sanitizeUIDate(b.date), b.time_slot) };
+            return { ...b, absoluteMatchTime: parseUIDateToAbsoluteObject(b.date, b.time_slot) };
         })
         .filter(b => b.absoluteMatchTime > nowIST);
 
@@ -568,7 +593,7 @@
                 <div class="flex items-center space-x-3">
                   <div class="text-lg">${iconMarker}</div>
                   <div>
-                    <h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-[10px] text-slate-500 font-mono font-medium ml-1">(${sanitizeUIDate(match.date)})</span></h4>
+                    <h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-[10px] text-slate-500 font-mono font-medium ml-1">(${normalizeToStandardStringDate(match.date)})</span></h4>
                     <p class="text-[10px] text-slate-400 font-mono mt-0.5">${match.time_slot}</p>
                   </div>
                 </div>
