@@ -1,1 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chirag Sports Portal — Member Desk</title>
+  
+  <link rel="manifest" href="/manifest.json?v=2.0.0">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link class="app-main-icon-src" rel="apple-touch-icon" href="/icon-192.png?v=2.0.0">
 
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
+
+    /* Static Boot Overlay Panel */
+    #appFirstBootSplashScreen {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, #083344 0%, #020617 80%);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s ease-out;
+    }
+  </style>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        // 🧼 FORCE SERVICE WORKER TO RE-FETCH TO UPDATE THE VAULT
+        navigator.serviceWorker.register("/service-worker.js?v=2.0.0")
+          .then(reg => {
+            console.log("✓ Mobile App Engine Active.");
+            reg.update(); // Automatically update in the background if a change is detected
+          })
+          .catch(err => console.log("× Service Engine Error: ", err));
+      });
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans select-none flex flex-col justify-between pb-6">
+
+  <div id="appFirstBootSplashScreen">
+    <div class="relative flex flex-col items-center">
+      <img src="/icon-512.png?v=2.0.0" alt="Pickle at Chirag Logo" class="w-36 h-36 rounded-[32px] shadow-2xl border-2 border-cyan-500/20">
+      <div class="mt-6 text-center">
+        <h1 class="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-400">Pickle At</h1>
+        <h2 class="text-3xl font-black tracking-tight text-white uppercase mt-0.5 filter drop-shadow-md">Chirag</h2>
+        <div class="w-8 h-0.5 bg-cyan-400 mx-auto mt-3 rounded-full opacity-60"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-slate-900 border-b border-slate-800 text-xs py-2 px-4 shadow-md">
+    <div class="max-w-xl mx-auto flex items-center space-x-2 overflow-hidden">
+      <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded font-black uppercase text-[9px] tracking-wider shrink-0 animate-pulse">Notice</span>
+      <marquee id="systemGlobalTicker" class="text-slate-300 font-medium"></marquee>
+    </div>
+  </div>
+
+  <div id="pwaGlobalInstallBanner" class="hidden max-w-md w-full mx-auto px-4 mt-4 select-none">
+    <div class="bg-gradient-to-r from-cyan-950/40 to-slate-900 border border-cyan-500/30 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+      <div class="flex items-center space-x-3">
+        <div class="text-xl bg-cyan-500/10 border border-cyan-500/20 p-2 rounded-xl text-center">📱</div>
+        <div>
+          <h4 class="text-xs font-black text-slate-100 uppercase tracking-wider">Install App Icon</h4>
+          <p id="pwaBannerInstructionText" class="text-[10px] text-slate-400 mt-0.5 font-medium">Add Pickle at Chirag right to your mobile workspace launcher screens.</p>
+        </div>
+      </div>
+      <button id="pwaActionTriggerBtn" class="bg-cyan-500 text-slate-950 text-[10px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest hover:brightness-110 shadow-lg active:scale-[0.97] transition-all cursor-pointer">Install</button>
+    </div>
+  </div>
+
+  <main class="p-4 max-w-xl mx-auto w-full flex-1 flex flex-col justify-center">
+    
+    <div id="viewLoginPanel" class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
+      <div class="text-center space-y-1">
+        <h2 class="text-xs font-black tracking-widest uppercase text-red-500">Welcome Back</h2>
+        <p class="text-xl font-black text-slate-100 tracking-tight">Log Into Resident Portal</p>
+      </div>
+      <div class="space-y-3 pt-2">
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Google Email Address</label>
+          <input type="email" id="loginEmailField" placeholder="name@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-red-500 text-slate-100 placeholder-slate-600 font-mono">
+        </div>
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Personal Password Key</label>
+          <input type="password" id="loginPasswordField" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-red-500 text-slate-100 placeholder-slate-700 tracking-widest">
+        </div>
+        <button onclick="executeMemberLoginHandshake()" class="w-full bg-gradient-to-r from-red-500 to-amber-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
+          Sign Into Dashboard
+        </button>
+      </div>
+      <div class="flex justify-between items-center pt-3 border-t border-slate-800/60 text-xs">
+        <p class="text-slate-400">New player? <button onclick="toggleInterfaceView('register')" class="text-amber-400 font-bold hover:underline cursor-pointer">Register</button></p>
+        <button onclick="toggleInterfaceView('reset')" class="text-cyan-400 font-bold hover:underline cursor-pointer">Forgot Password?</button>
+      </div>
+    </div>
+
+    <div id="viewRegisterPanel" class="hidden bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
+      <div class="text-center space-y-1">
+        <h2 class="text-xs font-black tracking-widest uppercase text-amber-500">Create Member Password</h2>
+        <p class="text-xs text-slate-400">Initialize whitelisted profile credentials.</p>
+      </div>
+      <div class="space-y-3 pt-2">
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Whitelisted Email Address</label>
+          <input type="email" id="regEmailField" placeholder="rallyxy@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-600 font-mono">
+        </div>
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Your Full Name</label>
+          <input type="text" id="regNameField" placeholder="Your Name" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-600">
+        </div>
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Society Unit Code</label>
+          <input type="text" id="regCodeField" placeholder="c2" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-600 font-mono">
+        </div>
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Set Account Password</label>
+          <input type="password" id="regPasswordField" placeholder="••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-amber-500 text-slate-100 placeholder-slate-700 tracking-widest">
+        </div>
+        <button onclick="executeMemberAccountRegistration()" class="w-full bg-amber-500 text-slate-950 font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
+          Complete Registration
+        </button>
+      </div>
+      <div class="text-center pt-2 border-t border-slate-800/60">
+        <p class="text-xs text-slate-400">Back to security gate? <button onclick="toggleInterfaceView('login')" class="text-red-400 font-bold hover:underline cursor-pointer">Log in here</button></p>
+      </div>
+    </div>
+
+    <div id="viewResetPanel" class="hidden bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4 max-w-md w-full mx-auto">
+      <div class="text-center space-y-1">
+        <h2 class="text-xs font-black tracking-widest uppercase text-cyan-400">Secure Password Reset</h2>
+        <p class="text-xs text-slate-400">Verify whitelisted registration code details.</p>
+      </div>
+      <div class="space-y-3 pt-2">
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Registered Email Address</label>
+          <input type="email" id="resetEmailField" placeholder="resident@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-400 text-slate-100 placeholder-slate-600 font-mono">
+        </div>
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Society Joining/Unit Code Key</label>
+          <input type="text" id="resetCodeField" placeholder="Enter whitelisted registration code" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-400 text-slate-100 placeholder-slate-600 font-mono">
+        </div>
+        <div class="space-y-1">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Generate New Password</label>
+          <input type="password" id="resetNewPasswordField" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-400 text-slate-100 placeholder-slate-700 tracking-widest">
+        </div>
+        <button onclick="executeSecurePasswordResetOverride()" class="w-full bg-cyan-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
+          Override & Save Password
+        </button>
+      </div>
+      <div class="text-center pt-2 border-t border-slate-800/60">
+        <p class="text-xs text-slate-400">Remembered keys? <button onclick="toggleInterfaceView('login')" class="text-red-400 font-bold hover:underline cursor-pointer">Return to Login</button></p>
+      </div>
+    </div>
+
+    <div id="viewWorkspacePanel" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex justify-between items-center shadow-lg">
+         <div class="flex items-center space-x-3">
+            <div class="text-2xl bg-red-500/10 border border-red-500/20 p-2 rounded-xl text-center">🏆</div>
+            <div>
+               <h3 id="lblWorkspaceMemberName" class="text-sm font-black text-slate-100">--</h3>
+               <p id="lblWorkspaceMemberEmail" class="text-[10px] text-slate-400 font-mono tracking-wide mt-0.5">--</p>
+            </div>
+         </div>
+         <div class="text-right">
+            <span class="text-[9px] uppercase font-black text-slate-400 tracking-wider block">Available Tokens</span>
+            <span id="lblWorkspaceAvailableTokens" class="text-lg font-black text-amber-400 font-mono">0</span>
+         </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-lg space-y-3">
+         <div class="flex justify-between items-center overflow-x-auto gap-2 py-0.5" id="userCalendarStrip"></div>
+         <div class="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-900 text-xs font-bold text-center">
+           <button id="userBtnC1" onclick="switchUserCourtAsset('Pickleball Court 1')" class="bg-slate-900 text-red-400 p-2 rounded-lg border border-slate-800 font-bold">PB Court 1</button>
+           <button id="userBtnC2" onclick="switchUserCourtAsset('Pickleball Court 2')" class="text-slate-500 p-2 rounded-lg font-bold">PB Court 2</button>
+           <button id="userBtnC3" onclick="switchUserCourtAsset('Badminton Court 1')" class="text-slate-500 p-2 rounded-lg font-bold">BD Court 1</button>
+         </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-lg space-y-3">
+         <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+            <span class="text-xs font-black uppercase text-slate-400">Select Booking Time Frame</span>
+            <span id="lblUserAssetHeadline" class="text-[10px] font-black uppercase text-red-400 tracking-wider">Pickleball Court 1</span>
+         </div>
+         <div id="userTimeSlotMatrixGrid" class="grid grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto pr-1"></div>
+         <div class="pt-2">
+            <button onclick="commitSecureMemberBooking()" class="w-full bg-gradient-to-r from-red-500 to-amber-500 text-slate-950 font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-xl hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer">
+               Lock Booking Reservation Frame
+            </button>
+         </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-lg space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">Your Booking Ledger</h2>
+          <div class="flex space-x-3 text-[10px] font-black uppercase tracking-wider">
+            <button id="tabUserLogUpcoming" onclick="toggleUserLogTab('upcoming')" class="text-emerald-400 underline decoration-2 underline-offset-4 font-black cursor-pointer">Upcoming Matches</button>
+            <button id="tabUserLogPast" onclick="toggleUserLogTab('past')" class="text-slate-500 cursor-pointer">History Log</button>
+          </div>
+        </div>
+        <div id="userPersonalLedgerContainer" class="max-h-[240px] overflow-y-auto space-y-2.5 pr-1"></div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-lg space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <div class="flex items-center space-x-2">
+             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+             <h2 class="text-xs font-black tracking-wider uppercase text-cyan-400">Live Club Schedule Matrix</h2>
+          </div>
+          <span class="text-[9px] bg-cyan-950 text-cyan-400 border border-cyan-900/60 px-2 py-0.5 rounded font-black uppercase tracking-wider">All Courts</span>
+        </div>
+        <div id="globalClubLogLedgerContainer" class="max-h-[260px] overflow-y-auto space-y-2.5 pr-1 text-slate-100"></div>
+      </div>
+
+      <div class="text-center">
+         <button onclick="executeLogoutSequence()" class="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-red-400 transition-all border border-slate-800/80 px-4 py-2 rounded-xl bg-slate-900/40">✕ Terminate Session Authorization</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-[10px] text-slate-600 font-medium tracking-wide">
+    Chirag Sports Portal Engine &bull; Cloud Database Sync Secured
+  </footer>
+
+  <script>
+    const TIME_SLOTS = [
+      "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", 
+      "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00", 
+      "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", 
+      "19:00 - 20:00", "20:00 - 21:00"
+    ];
+    let selectedUserAsset = "Pickleball Court 1", selectedUserDateStr = "", userActiveBookingsLogs = [], sessionMemberProfile = null;
+    let selectedTentativeSlotMemory = "", activeUserLogTab = "upcoming", secureUserSessionToken = "";
+    let deferredPromptInstance = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            const splash = document.getElementById('appFirstBootSplashScreen');
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => splash.remove(), 500);
+            }
+        }, 1000);
+        initiateSmartPwaBannerSystem();
+    });
+
+    function initiateSmartPwaBannerSystem() {
+        const banner = document.getElementById('pwaGlobalInstallBanner');
+        const txt = document.getElementById('pwaBannerInstructionText');
+        const btn = document.getElementById('pwaActionTriggerBtn');
+        const isIosDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isStandaloneActive = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
+        if (isStandaloneActive) return;
+
+        if (isIosDevice) {
+            banner.classList.remove('hidden');
+            txt.innerText = "Tap Safari's 'Share' button at the bottom navigation panel, then tap 'Add to Home Screen'.";
+            btn.innerText = "Guide";
+            btn.onclick = () => alert("🍏 Apple Setup Guide:\n1. Click the share arrow at the bottom of Safari.\n2. Choose 'Add to Home Screen' from the card menu.");
+        } else {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPromptInstance = e;
+                banner.classList.remove('hidden');
+            });
+            btn.onclick = () => {
+                if (!deferredPromptInstance) return;
+                deferredPromptInstance.prompt();
+                deferredPromptInstance.userChoice.then((choice) => {
+                    if (choice.outcome === 'accepted') banner.classList.add('hidden');
+                    deferredPromptInstance = null;
+                });
+            };
+        }
+    }
+
+    function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
+
+    function sanitizeUIDate(input) {
+        if(!input) return "";
+        let str = input.toString().trim();
+        if(str.includes('T')) {
+            let d = new Date(str);
+            if(!isNaN(d.getTime())) {
+                let localIST = new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+                return `${String(localIST.getDate()).padStart(2,'0')}/${String(localIST.getMonth()+1).padStart(2,'0')}/${localIST.getFullYear()}`;
+            }
+        }
+        return str;
+    }
+
+    function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
+        try {
+            const [d, m, y] = dateStr.split('/');
+            const [startHourStr] = timeSlotStr.split(' - ');
+            const [hour, minutes] = startHourStr.split(':');
+            return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
+        } catch(e) { return new Date(); }
+    }
+
+    function toggleInterfaceView(targetView) {
+        document.getElementById('viewLoginPanel').classList.add('hidden');
+        document.getElementById('viewRegisterPanel').classList.add('hidden');
+        document.getElementById('viewWorkspacePanel').classList.add('hidden');
+        document.getElementById('viewResetPanel').classList.add('hidden');
+
+        if(targetView === 'login') document.getElementById('viewLoginPanel').classList.remove('hidden');
+        if(targetView === 'register') document.getElementById('viewRegisterPanel').classList.remove('hidden');
+        if(targetView === 'workspace') {
+            document.getElementById('viewWorkspacePanel').classList.remove('hidden');
+            document.getElementById('pwaGlobalInstallBanner').classList.add('hidden');
+        }
+        if(targetView === 'reset') document.getElementById('viewResetPanel').classList.remove('hidden');
+    }
+
+    function extractNormalizedAssetToken(name) {
+        if(!name) return "";
+        let str = name.toString().toLowerCase().trim();
+        let prefix = (str.includes("badminton") || str.includes("bd")) ? "bd" : "pb";
+        let numbers = str.replace(/[^0-9]/g, '');
+        return prefix + (numbers.length > 0 ? numbers.charAt(0) : "1");
+    }
+
+    document.getElementById('systemGlobalTicker').innerText = "Welcome to the Pickle at Chirag Portal! Use your secure password to manage your active booking.";
+
+    function executeSecurePasswordResetOverride() {
+        const email = document.getElementById('resetEmailField').value.trim();
+        const verificationCode = document.getElementById('resetCodeField').value.trim();
+        const newPassword = document.getElementById('resetNewPasswordField').value.trim();
+
+        if (!email || !verificationCode || !newPassword) {
+            return alert("Please map all fields cleanly before executing password resets.");
+        }
+
+        fetch('/api/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, verificationCode, newPassword })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === "success" || res.result === "success") {
+                alert("✓ Password overridden successfully! Database synced clean.");
+                document.getElementById('resetEmailField').value = "";
+                document.getElementById('resetCodeField').value = "";
+                document.getElementById('resetNewPasswordField').value = "";
+                toggleInterfaceView('login');
+            } else {
+                alert(res.message || "Reset request denied by core gateway.");
+            }
+        })
+        .catch(() => alert("Database sync pause. Please retry link tracking."));
+    }
+
+    function executeMemberAccountRegistration() {
+        const email = document.getElementById('regEmailField').value.trim();
+        const fullName = document.getElementById('regNameField').value.trim();
+        const registrationCode = document.getElementById('regCodeField').value.trim();
+        const password = document.getElementById('regPasswordField').value.trim();
+
+        if (!email || !fullName || !registrationCode || !password) {
+            return alert("Please fill out all registration form fields.");
+        }
+
+        fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, fullName, registrationCode, password })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === "success" || res.result === "success") {
+                alert("✓ Account initialization successful! You can now log into your profile desk.");
+                toggleInterfaceView('login'); 
+            } else {
+                alert(res.message || "Registration failed.");
+            }
+        });
+    }
+
+    function executeMemberLoginHandshake() {
+        const email = document.getElementById('loginEmailField').value.trim();
+        const password = document.getElementById('loginPasswordField').value.trim();
+
+        if(!email || !password) return alert("Please specify login email and password keys.");
+
+        fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+        .then(r => r.json()).then(res => {
+            if(res.status === "error") return alert(res.message);
+            
+            secureUserSessionToken = res.token;
+            sessionMemberProfile = res.user;
+            document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
+            document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
+            document.getElementById('lblWorkspaceAvailableTokens').innerText = res.activeTokens;
+            document.getElementById('systemGlobalTicker').innerText = res.ticker || "Welcome back to the portal loop.";
+
+            toggleInterfaceView('workspace');
+            initUserCalendarStrip();
+            startPollingLiveWorkspaceLogs();
+        })
+        .catch(() => alert("Authorization channel offline."));
+    }
+
+    function startPollingLiveWorkspaceLogs() {
+        syncUserLogsAndMatrix();
+        setInterval(syncUserLogsAndMatrix, 4000);
+    }
+
+    function syncUserLogsAndMatrix() {
+        if(!sessionMemberProfile) return;
+        fetch('/api/fetch-logs', { method:'POST' }).then(r=>r.json()).then(res => {
+            userActiveBookingsLogs = res.records || [];
+            renderUserMatrixGridUI();
+            renderUserPersonalLedgerUI();
+            renderGlobalClubLogUI();
+        });
+    }
+
+    function initUserCalendarStrip() {
+        const box = document.getElementById('userCalendarStrip'); if(!box) return;
+        const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]; const nowIST = getNowLocalIST();
+        box.innerHTML = "";
+
+        let dates = [];
+        for(let i=0; i<3; i++) {
+           let d = new Date(nowIST.getTime()); d.setDate(nowIST.getDate() + i);
+           dates.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`);
+           if(i === 0 && !selectedUserDateStr) selectedUserDateStr = dates[0];
+           
+           let isSel = selectedUserDateStr === dates[i];
+           box.innerHTML += `
+             <div onclick="switchUserDateAsset('${dates[i]}')" class="border text-center flex-1 p-2 rounded-xl cursor-pointer transition-all ${isSel?'border-red-500 bg-red-950/20 text-red-400 font-bold':'border-slate-800 bg-slate-900 text-slate-400'}">
+                <p class="text-[9px] uppercase font-black">${days[d.getDay()]}</p>
+                <p class="text-sm font-black text-slate-200 mt-0.5">${String(d.getDate()).padStart(2,'0')}</p>
+             </div>`;
+        }
+    }
+
+    function switchUserDateAsset(dateStr) { selectedUserDateStr = dateStr; selectedTentativeSlotMemory = ""; initUserCalendarStrip(); syncUserLogsAndMatrix(); }
+    
+    function switchUserCourtAsset(courtName) {
+        selectedUserAsset = courtName; selectedTentativeSlotMemory = "";
+        document.getElementById('lblUserAssetHeadline').innerText = courtName;
+        ['userBtnC1','userBtnC2','userBtnC3'].forEach(id => document.getElementById(id).className="text-slate-500 p-2 rounded-lg font-bold");
+        const activeId = courtName.includes('1') ? (courtName.includes('Pickleball')?'userBtnC1':'userBtnC3') : 'userBtnC2';
+        document.getElementById(activeId).className="bg-slate-950 text-red-400 p-2 rounded-lg border border-slate-800 font-bold";
+        syncUserLogsAndMatrix();
+    }
+
+    function renderUserMatrixGridUI() {
+        const grid = document.getElementById('userTimeSlotMatrixGrid'); if(!grid) return;
+        const nowIST = getNowLocalIST();
+        const targetToken = extractNormalizedAssetToken(selectedUserAsset);
+        const activeFilteredLogs = userActiveBookingsLogs.filter(l => extractNormalizedAssetToken(l.court_name) === targetToken && sanitizeUIDate(l.date) === selectedUserDateStr);
+
+        let newHTML = "";
+        TIME_SLOTS.forEach(slot => {
+            const rowMatch = activeFilteredLogs.find(l => l.time_slot.trim() === slot.trim());
+            const isPast = nowIST >= parseUIDateToAbsoluteObject(selectedUserDateStr, slot);
+            
+            let cardStyle = "bg-slate-950 border-slate-900 text-slate-300 hover:border-slate-800 cursor-pointer";
+            let stateLabel = "Available Slot"; let action = `onclick="selectTentativeUserSlot('${slot}')"`;
+
+            if(isPast) {
+                cardStyle = "bg-slate-900/10 border-slate-950 text-slate-700 line-through cursor-not-allowed";
+                stateLabel = "Expired Slot"; action = "";
+            } else if(rowMatch) {
+                let isMine = rowMatch.booked_by === sessionMemberProfile.full_name;
+                cardStyle = isMine ? "bg-red-950/20 border-red-500 text-red-400 font-bold" : "bg-slate-900 border-slate-800 text-slate-500 cursor-not-allowed";
+                stateLabel = "Your Locked Session";
+                action = isMine ? `onclick="forceUserSelfRelease('${rowMatch.booking_id}')"` : "";
+            } else if(selectedTentativeSlotMemory === slot) {
+                cardStyle = "border-amber-400 bg-amber-950/10 text-amber-400 font-bold shadow-md";
+                stateLabel = "Selected Target Block";
+            }
+
+            newHTML += `<div ${action} class="border p-3 rounded-xl text-center select-none transition-all ${cardStyle}"><span class="text-xs font-mono font-bold block">${slot}</span><span class="text-[9px] uppercase font-black mt-0.5 tracking-wide block">${stateLabel}</span></div>`;
+        });
+        grid.innerHTML = newHTML;
+    }
+
+    function selectTentativeUserSlot(slotStr) { selectedTentativeSlotMemory = slotStr; renderUserMatrixGridUI(); }
+
+    function renderUserPersonalLedgerUI() {
+        const container = document.getElementById('userPersonalLedgerContainer'); if(!container) return;
+        container.innerHTML = ""; const nowIST = getNowLocalIST();
+
+        let myParsedLogs = userActiveBookingsLogs
+            .filter(b => b.booked_by === sessionMemberProfile.full_name)
+            .map(b => { return { ...b, parsedTime: parseUIDateToAbsoluteObject(sanitizeUIDate(b.date), b.time_slot) }; });
+
+        let targetedRows = myParsedLogs.filter(b => {
+            return activeUserLogTab === "upcoming" ? b.parsedTime > nowIST : b.parsedTime <= nowIST;
+        });
+
+        if (activeUserLogTab === "upcoming") { targetedRows.sort((a, b) => a.parsedTime - b.parsedTime); } 
+        else { targetedRows.sort((a, b) => b.parsedTime - a.parsedTime); }
+
+        if (targetedRows.length === 0) {
+            container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No records found matching this ledger view.</p>`;
+            return;
+        }
+
+        targetedRows.forEach(b => {
+            let actionBtn = activeUserLogTab === "upcoming" 
+                ? `<button onclick="forceUserSelfRelease('${b.booking_id}')" class="text-[10px] bg-red-950/40 text-red-400 border border-red-900/40 px-2.5 py-1.5 rounded-lg font-black uppercase hover:bg-red-500 hover:text-slate-950 transition-all cursor-pointer">Cancel</button>` 
+                : `<span class="text-[9px] bg-slate-950 text-slate-500 border border-slate-900 px-2 py-1 rounded font-black uppercase tracking-wide">Archived</span>`;
+
+            container.innerHTML += `
+              <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-900">
+                <div>
+                  <h4 class="font-bold text-slate-200 text-xs">${b.court_name}</h4>
+                  <p class="text-[10px] text-slate-400 font-mono mt-0.5">${sanitizeUIDate(b.date)} | ${b.time_slot}</p>
+                </div>
+                ${actionBtn}
+              </div>`;
+        });
+    }
+
+    function renderGlobalClubLogUI() {
+        const container = document.getElementById('globalClubLogLedgerContainer'); if(!container) return;
+        container.innerHTML = "";
+        const nowIST = getNowLocalIST();
+
+        let activeGlobalMatches = userActiveBookingsLogs.map(b => {
+            return { ...b, absoluteMatchTime: parseUIDateToAbsoluteObject(sanitizeUIDate(b.date), b.time_slot) };
+        })
+        .filter(b => b.absoluteMatchTime > nowIST);
+
+        activeGlobalMatches.sort((a, b) => a.absoluteMatchTime - b.absoluteMatchTime);
+
+        if (activeGlobalMatches.length === 0) {
+            container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No scheduled club matches booked on any court for the upcoming days.</p>`;
+            return;
+        }
+
+        activeGlobalMatches.forEach(match => {
+            let isItemMine = match.booked_by === sessionMemberProfile.full_name;
+            let iconMarker = match.court_name.includes('Badminton') ? "🏸" : "🏓";
+            
+            container.innerHTML += `
+              <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border ${isItemMine ? 'border-red-500/40 bg-red-950/5' : 'border-slate-900'}">
+                <div class="flex items-center space-x-3">
+                  <div class="text-lg">${iconMarker}</div>
+                  <div>
+                    <h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-[10px] text-slate-500 font-mono font-medium ml-1">(${sanitizeUIDate(match.date)})</span></h4>
+                    <p class="text-[10px] text-slate-400 font-mono mt-0.5">${match.time_slot}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[9px] uppercase tracking-wider text-slate-500 font-black block">Player</span>
+                  <span class="text-xs font-bold ${isItemMine ? 'text-red-400' : 'text-cyan-400'}">${match.booked_by}</span>
+                </div>
+              </div>`;
+        });
+    }
+
+    function toggleUserLogTab(tabKey) {
+        activeUserLogTab = tabKey;
+        document.getElementById('tabUserLogUpcoming').className = tabKey === 'upcoming' ? 'text-emerald-400 underline decoration-2 underline-offset-4 font-black cursor-pointer' : 'text-slate-500 cursor-pointer';
+        document.getElementById('tabUserLogPast').className = tabKey === 'past' ? 'text-emerald-400 underline decoration-2 underline-offset-4 font-black cursor-pointer' : 'text-slate-500 cursor-pointer';
+        renderUserPersonalLedgerUI();
+    }
+
+    function forceUserSelfRelease(bookingId) {
+        if (confirm("Are you sure you want to cancel this slot? Your token will be instantly refunded to your balance pool.")) {
+            fetch('/api/release-booking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId, sessionToken: secureUserSessionToken })
+            })
+            .then(r => r.json()).then(res => {
+                if(res.status === "success") {
+                    alert("✓ Reservation canceled successfully!");
+                    syncUserLogsAndMatrix();
+                } else {
+                    alert(res.message || "Unable to release session.");
+                }
+            });
+        }
+    }
+
+    function commitSecureMemberBooking() {
+        if(!selectedTentativeSlotMemory) return alert("Please tap an open schedule cell card to construct a booking target.");
+        
+        fetch('/api/secure-booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                courtName: selectedUserAsset,
+                sportType: selectedUserAsset.includes('Pickleball') ? 'PICKLEBALL' : 'BADMINTON',
+                userName: sessionMemberProfile.full_name,
+                date: selectedUserDateStr,
+                timeSlot: selectedTentativeSlotMemory,
+                sessionToken: secureUserSessionToken
+            })
+        })
+        .then(r => r.json()).then(res => {
+            if(res.status === "success") {
+                alert("✓ Booking secured successfully!");
+                selectedTentativeSlotMemory = "";
+                syncUserLogsAndMatrix();
+            } else {
+                alert(res.message);
+            }
+        });
+    }
+
+    function executeLogoutSequence() {
+        if(confirm("Confirm logging out of active workspace context?")) {
+            sessionMemberProfile = null; secureUserSessionToken = ""; selectedTentativeSlotMemory = "";
+            document.getElementById('loginEmailField').value = ""; document.getElementById('loginPasswordField').value = "";
+            toggleInterfaceView('login');
+            document.getElementById('pwaGlobalInstallBanner').classList.remove('hidden');
+            initiateSmartPwaBannerSystem();
+        }
+    }
+  </script>
+</body>
+</html>
