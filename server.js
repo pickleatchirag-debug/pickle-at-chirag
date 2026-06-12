@@ -8,7 +8,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 // 🎯 KEEP YOUR ORIGINAL GOOGLE SCRIPT URL STRING LINK HERE CLEANLY
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXPrUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
 // Master memory storage registries synced directly to your spreadsheet
 let REGISTERED_USERS = [];
