@@ -7,23 +7,25 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🎯 ENSURE THIS CONTAINS YOUR ACTIVE GOOGLE SHEETS WEB APP URL
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
+// 🎯 ACTIVE GOOGLE WEB APP DEPLOYMENT LINK URL
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXPrUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvD0eS/exec";
 
 let REGISTERED_USERS = [];
 let BOOKING_RECORDS = [];
 
-// 🔄 SYNC PIPELINE RUNTIME ENGINE LOOP
+// 🔄 RE-ENGINEERED BACKGROUND MEMORY SYNCHRONIZATION LEDGER PIPE
 async function syncDatabaseMemoryPool() {
   try {
     let response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`);
-    if (!response.ok) throw new Error("Outbound bridge network error.");
+    if (!response.ok) throw new Error("Outbound bridge network connection dropped.");
     
     let data = await response.json();
     if (data.users) REGISTERED_USERS = data.users;
     if (data.bookings) BOOKING_RECORDS = data.bookings;
+    
+    console.log(`⚡ Sync complete. Users loaded: ${REGISTERED_USERS.length} | Bookings loaded: ${BOOKING_RECORDS.length}`);
   } catch (e) {
-    console.log("Database Sync Connection Pause... Retrying structural stream.");
+    console.log("Database Sync Connection Pause... Retrying structural stream:", e.message);
   }
 }
 setInterval(syncDatabaseMemoryPool, 4000);
@@ -47,7 +49,7 @@ app.post('/api/login', (req, res) => {
       google_email: match.google_email
     },
     activeTokens: match.available_tokens ?? 2,
-    ticker: "Sync Completed. All live court assets unsealed."
+    ticker: "Sync Completed. Welcome back to Chirag Sports Portal Desk."
   });
 });
 
@@ -77,7 +79,7 @@ app.post('/api/fetch-logs', (req, res) => {
   res.json({ records: BOOKING_RECORDS });
 });
 
-// 🔒 CLEAN INTEGRATED TRANSACTION PASS-THROUGH
+// 🔒 THE ABSOLUTE POSITION LOCKING WRITER
 app.post('/api/secure-booking', async (req, res) => {
   const { courtName, sportType, userName, date, timeSlot } = req.body;
   try {
