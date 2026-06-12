@@ -7,18 +7,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🎯 MAKE SURE THIS IS YOUR ACTIVE GOOGLE SHEETS WEB APP URL FROM CODE.GS
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
+// 🎯 ENSURE THIS CONTAINS YOUR ACTIVE GOOGLE SHEETS WEB APP URL
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXPrUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvD0eS/exec";
 
 let REGISTERED_USERS = [];
 let BOOKING_RECORDS = [];
-let ADMIN_MANAGERS = [];
-
-function getTodayFormattedIST(offsetDays = 0) {
-  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-  d.setDate(d.getDate() + offsetDays);
-  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-}
 
 // 🔄 SYNC PIPELINE RUNTIME ENGINE LOOP
 async function syncDatabaseMemoryPool() {
@@ -84,23 +77,29 @@ app.post('/api/fetch-logs', (req, res) => {
   res.json({ records: BOOKING_RECORDS });
 });
 
+// 🔒 FIXED COLUMN MAPPING EXECUTOR ROUTE
 app.post('/api/secure-booking', async (req, res) => {
   const { courtName, sportType, userName, date, timeSlot } = req.body;
   try {
     const bookingId = `b_${Math.floor(1000 + Math.random() * 9000)}`;
+    
+    // 🎯 PERFECT ALIGNMENT: Matches columns A, B, C, D, E, F, G, H exactly to your sheet blueprint!
     let response = await fetch(GOOGLE_SCRIPT_URL, { 
       method: "POST", 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: "secureBooking",
-        bookingId: bookingId,
-        courtName: courtName,
-        sportType: sportType,
-        userName: userName,
-        date: date,
-        timeSlot: timeSlot
+        bookingId: bookingId,      // Column A (booking_id)
+        courtName: courtName,      // Column B (court_name)
+        sportType: sportType,      // Column C (sport_type)
+        userName: userName,        // Column D (booked_by)
+        email: "",                 // Column E (player_email) -> Left empty cleanly
+        unit: "",                  // Column F (player_unit)  -> Left empty cleanly
+        date: date,                // Column G (date)         -> Lands perfectly now!
+        timeSlot: timeSlot         // Column H (time_slot)    -> Lands perfectly now!
       })
     });
+    
     let data = await response.json();
     syncDatabaseMemoryPool();
     res.json(data);
