@@ -17,26 +17,47 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans select-none flex flex-col justify-between pb-6">
 
-  <!-- TOP HEADER NOTIFIER BAR -->
   <div class="bg-slate-900 border-b border-slate-800 text-xs py-2 px-4 shadow-md">
     <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div class="flex items-center space-x-2 overflow-hidden">
-        <span class="bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded font-black uppercase text-[9px] tracking-wider animate-pulse">Admin Mode</span>
-        <p class="text-slate-300 font-medium font-mono">Secured Cloud Shell Protocol Connected.</p>
+        <span class="bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded font-black uppercase text-[9px] tracking-wider animate-pulse">Admin Shell</span>
+        <p id="lblConnectionStatus" class="text-slate-300 font-medium font-mono">Awaiting Secure Login Key Authentication...</p>
       </div>
       <div id="lblLiveClockIST" class="text-slate-400 font-mono text-[11px] hidden sm:block"></div>
     </div>
   </div>
 
-  <main class="p-4 max-w-4xl mx-auto w-full flex-1 space-y-6">
+  <div id="adminSecurityGateShield" class="p-4 max-w-md w-full mx-auto flex-1 flex flex-col justify-center">
+    <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4">
+      <div class="text-center space-y-1">
+        <div class="text-3xl mb-1">🛡️</div>
+        <h2 class="text-xs font-black tracking-widest uppercase text-sky-400">Terminal Gate</h2>
+        <p class="text-xl font-black text-slate-100 tracking-tight">Log Into Administrative Desk</p>
+      </div>
+      <div class="space-y-3 pt-2">
+        <div class="space-y-1 text-xs">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Admin Email Address</label>
+          <input type="email" id="adminGateEmail" placeholder="admin@email.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 focus:outline-none focus:border-sky-500 text-slate-100 placeholder-slate-700 font-mono">
+        </div>
+        <div class="space-y-1 text-xs">
+          <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Secret Password Key</label>
+          <input type="password" id="adminGatePassword" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 focus:outline-none focus:border-sky-500 text-slate-100 placeholder-slate-700 tracking-widest">
+        </div>
+        <button onclick="executeAdminSecurityHandshake()" class="w-full bg-gradient-to-r from-sky-500 to-cyan-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer mt-2">
+          Verify Security Key Metrics
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main id="adminProtectedWorkspaceConsole" class="hidden p-4 max-w-4xl mx-auto w-full flex-1 space-y-6">
     
-    <!-- HEADER BRANDING PANEL -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-slate-900 to-sky-950/20 border border-slate-800 p-5 rounded-2xl gap-4 shadow-xl">
       <div class="flex items-center space-x-4">
         <div class="text-3xl bg-sky-500/10 border border-sky-500/20 p-3 rounded-2xl text-center shadow-inner">🛡️</div>
         <div>
           <h1 class="text-xl font-black text-white uppercase tracking-tight">Chirag Sports Command Center</h1>
-          <p class="text-xs text-slate-400 font-medium mt-0.5">Master Database Control, Token Operations & Scheduling Overrides</p>
+          <p class="text-xs text-slate-400 font-medium mt-0.5">Welcome, <span id="lblActiveAdminName" class="text-sky-400 font-bold">Manager</span> &bull; Full Roster & Schedule Overrides Active</p>
         </div>
       </div>
       <div class="flex space-x-2 shrink-0">
@@ -46,7 +67,6 @@
       </div>
     </div>
 
-    <!-- METRIC STATUS HIGHLIGHT CARDS -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="bg-slate-900 border border-slate-800/80 p-4 rounded-xl shadow-lg">
         <span class="text-[9px] uppercase font-black text-slate-400 tracking-wider block">Total Whitelisted</span>
@@ -66,13 +86,10 @@
       </div>
     </div>
 
-    <!-- MAIN TWO-COLUMN MANAGEMENT SPLIT -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- LEFT MANAGEMENT BLOCK (7 COLUMNS) -->
       <div class="lg:col-span-7 space-y-6">
         
-        <!-- MODULE: UNIVERSAL EMAIL WHITELIST GATEWAY -->
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
           <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2">➕ Whitelist Resident Email Gateway</h2>
           <p class="text-[11px] text-slate-400 mt-1">Input any residential email address (Gmail, Outlook, Yahoo, iCloud, etc.). Members will fill in their name, unit code, and password keys themselves upon first portal setup initialization.</p>
@@ -85,7 +102,6 @@
           </button>
         </div>
 
-        <!-- MODULE: COMPREHENSIVE CLUB EXPORT REPORTS SYSTEM -->
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
           <h2 class="text-xs font-black text-amber-400 uppercase tracking-widest border-b border-slate-800 pb-2">📊 Club Activity Report Generator</h2>
           <p class="text-[11px] text-slate-400">Compile and export live on-demand database extracts straight to standard `.csv` spreadsheets compatible with Excel.</p>
@@ -107,7 +123,6 @@
           </div>
         </div>
 
-        <!-- MODULE: LIVE MEMBER DIRECTORY & TOKEN MANAGER -->
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2">
             <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest">📋 Member Directory Vault</h2>
@@ -117,7 +132,6 @@
         </div>
       </div>
 
-      <!-- RIGHT MANAGEMENT BLOCK: MASTER SCHEDULE OVERRIDES (5 COLUMNS) -->
       <div class="lg:col-span-5 space-y-6">
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
           <div class="flex justify-between items-center border-b border-slate-800 pb-2">
@@ -137,10 +151,9 @@
   <script>
     let GLOBAL_ADMIN_USERS = [];
     let GLOBAL_ADMIN_BOOKINGS = [];
+    let secureAdminSessionToken = "";
 
     window.addEventListener('DOMContentLoaded', () => {
-        fetchAllAdminData();
-        setInterval(fetchAllAdminData, 5000);
         setInterval(updateAdminClock, 1000);
     });
 
@@ -151,7 +164,44 @@
         }
     }
 
+    // 🔒 HANDSHAKE VERIFICATION LOOP (Queries Admin_Directory tab exclusively)
+    function executeAdminSecurityHandshake() {
+        const email = document.getElementById('adminGateEmail').value.trim();
+        const password = document.getElementById('adminGatePassword').value.trim();
+
+        if(!email || !password) return alert("Please specify admin authentication credentials.");
+
+        fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+        .then(r => {
+            if(!r.ok) throw new Error("Invalid admin credential parameters.");
+            return r.json();
+        })
+        .then(res => {
+            secureAdminSessionToken = res.token;
+            document.getElementById('lblActiveAdminName').innerText = res.name;
+            document.getElementById('lblConnectionStatus').innerText = "✓ Console Operational Sync Active.";
+            
+            // Unveil the console view panels
+            document.getElementById('adminSecurityGateShield').classList.add('hidden');
+            document.getElementById('adminProtectedWorkspaceConsole').classList.remove('hidden');
+            
+            startActiveAdminPolling();
+        })
+        .catch(err => alert("Access Denied: Administrative authority could not be verified."));
+    }
+
+    function startActiveAdminPolling() {
+        fetchAllAdminData();
+        setInterval(fetchAllAdminData, 5000);
+    }
+
     function fetchAllAdminData() {
+        if(!secureAdminSessionToken) return;
+
         fetch('/api/fetch-logs', { method: 'POST' })
         .then(r => r.json())
         .then(res => {
@@ -249,12 +299,7 @@
         fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                fullName: "Pending Signup", 
-                email: email, 
-                registrationCode: "UNSET", 
-                password: "" 
-            })
+            body: JSON.stringify({ fullName: "Pending Signup", email: email, registrationCode: "UNSET", password: "" })
         })
         .then(r => r.json())
         .then(res => {
