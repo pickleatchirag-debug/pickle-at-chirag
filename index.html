@@ -287,36 +287,28 @@
 
     function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
-    // 🎯 RE-ENGINEERED COMPREHENSIVE DATE SANITIZATION NORMALIZATION ENGINE
-    function sanitizeUIDate(input) {
-        if (!input) return "";
-        let str = input.toString().trim().split('T')[0];
+    // 🎯 RE-BUILT UNIFIED STRIP MATCHING AND CLEANING SCHEME
+    function cleanTargetStringDate(dateIn) {
+        if (!dateIn) return "";
+        let str = dateIn.toString().trim().split(' ')[0].split('T')[0];
+        // Standardize delimiters to dashes for baseline logic checks
+        str = str.replace(/\//g, '-');
         
-        // Handles standard Google App script string mapping parameters
-        if (str.includes('/')) {
-            let parts = str.split('/');
-            if (parts[0].length === 4) {
-                // converts yyyy/mm/dd straight to standard dd/mm/yyyy
-                return `${String(parts[2]).padStart(2,'0')}/${String(parts[1]).padStart(2,'0')}/${parts[0]}`;
+        let components = str.split('-');
+        if (components.length === 3) {
+            // Checks if string layout starts with a four-digit year pattern (yyyy-mm-dd)
+            if (components[0].length === 4) {
+                return `${String(components[2]).padStart(2,'0')}-${String(components[1]).padStart(2,'0')}-${components[0]}`;
             }
-            return `${String(parts[0]).padStart(2,'0')}/${String(parts[1]).padStart(2,'0')}/${parts[2]}`;
-        }
-        
-        // Handles ISO string fallback filters paths parameters cleanly
-        if (str.includes('-')) {
-            let parts = str.split('-');
-            if (parts[0].length === 4) {
-                return `${String(parts[2]).padStart(2,'0')}/${String(parts[1]).padStart(2,'0')}/${parts[0]}`;
-            }
-            return `${String(parts[0]).padStart(2,'0')}/${String(parts[1]).padStart(2,'0')}/${parts[2]}`;
+            return `${String(components[0]).padStart(2,'0')}-${String(components[1]).padStart(2,'0')}-${components[2]}`;
         }
         return str;
     }
 
     function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
         try {
-            const cleanDate = sanitizeUIDate(dateStr);
-            const [d, m, y] = cleanDate.split('/');
+            const normalized = cleanTargetStringDate(dateStr);
+            const [d, m, y] = normalized.split('-');
             const [startHourStr] = timeSlotStr.split(' - ');
             const [hour, minutes] = startHourStr.split(':');
             return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
@@ -457,7 +449,7 @@
            dates.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`);
            if(i === 0 && !selectedUserDateStr) selectedUserDateStr = dates[0];
            
-           let isSel = sanitizeUIDate(selectedUserDateStr) === sanitizeUIDate(dates[i]);
+           let isSel = cleanTargetStringDate(selectedUserDateStr) === cleanTargetStringDate(dates[i]);
            box.innerHTML += `
              <div onclick="switchUserDateAsset('${dates[i]}')" class="border text-center flex-1 p-2 rounded-xl cursor-pointer transition-all ${isSel?'border-red-500 bg-red-950/20 text-red-400 font-bold':'border-slate-800 bg-slate-900 text-slate-400'}">
                 <p class="text-[9px] uppercase font-black">${days[d.getDay()]}</p>
@@ -482,11 +474,10 @@
         const nowIST = getNowLocalIST();
         const targetToken = extractNormalizedAssetToken(selectedUserAsset);
         
-        // Aligns date structural layers using precise evaluation blocks
-        const sanitizedSelectedDate = sanitizeUIDate(selectedUserDateStr);
+        const standardizedDateMarker = cleanTargetStringDate(selectedUserDateStr);
         const activeFilteredLogs = userActiveBookingsLogs.filter(l => 
             extractNormalizedAssetToken(l.court_name) === targetToken && 
-            sanitizeUIDate(l.date) === sanitizedSelectedDate
+            cleanTargetStringDate(l.date) === standardizedDateMarker
         );
 
         let newHTML = "";
@@ -507,6 +498,7 @@
                     stateLabel = "Your Locked Session";
                     action = `onclick="forceUserSelfRelease('${rowMatch.booking_id}')"`;
                 } else {
+                    // 🔒 HARD LOCK ACTIVATED: Other members' cells display unclickable "Booked" state labels
                     cardStyle = "bg-slate-900 border-slate-950 text-slate-600 cursor-not-allowed opacity-40";
                     stateLabel = "Booked";
                     action = "";
@@ -552,7 +544,7 @@
               <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-900">
                 <div>
                   <h4 class="font-bold text-slate-200 text-xs">${b.court_name}</h4>
-                  <p class="text-[10px] text-slate-400 font-mono mt-0.5">${sanitizeUIDate(b.date)} | ${b.time_slot}</p>
+                  <p class="text-[10px] text-slate-400 font-mono mt-0.5">${cleanTargetStringDate(b.date)} | ${b.time_slot}</p>
                 </div>
                 ${actionBtn}
               </div>`;
@@ -585,7 +577,7 @@
                 <div class="flex items-center space-x-3">
                   <div class="text-lg">${iconMarker}</div>
                   <div>
-                    <h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-[10px] text-slate-500 font-mono font-medium ml-1">(${sanitizeUIDate(match.date)})</span></h4>
+                    <h4 class="font-bold text-slate-200 text-xs">${match.court_name} <span class="text-[10px] text-slate-500 font-mono font-medium ml-1">(${cleanTargetStringDate(match.date)})</span></h4>
                     <p class="text-[10px] text-slate-400 font-mono mt-0.5">${match.time_slot}</p>
                   </div>
                 </div>
