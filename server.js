@@ -78,11 +78,33 @@ app.post('/api/fetch-logs', (req, res) => {
 });
 
 // 🔒 FIXED COLUMN MAPPING EXECUTOR ROUTE
+// 🔒 SEAMLESS COLUMN MAPPING EXECUTOR ROUTE
 app.post('/api/secure-booking', async (req, res) => {
   const { courtName, sportType, userName, date, timeSlot } = req.body;
   try {
     const bookingId = `b_${Math.floor(1000 + Math.random() * 9000)}`;
     
+    let response = await fetch(GOOGLE_SCRIPT_URL, { 
+      method: "POST", 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "secureBooking",
+        bookingId: bookingId,
+        courtName: courtName,
+        sportType: sportType,
+        userName: userName,
+        date: date,
+        timeSlot: timeSlot
+      })
+    });
+    
+    let data = await response.json();
+    syncDatabaseMemoryPool();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ status: "error", message: "Operational pipeline timeout. Direct row entry dropped." });
+  }
+});
     // 🎯 PERFECT ALIGNMENT: Matches columns A, B, C, D, E, F, G, H exactly to your sheet blueprint!
     let response = await fetch(GOOGLE_SCRIPT_URL, { 
       method: "POST", 
