@@ -1,18 +1,24 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
-const app = require('express')();
+const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🎯 KEEP YOUR ORIGINAL GOOGLE SCRIPT URL STRING LINK HERE CLEANLY
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
+// 🎯 PASTE YOUR LIVE GOOGLE SCRIPT WEB APP EXTENSION LINK HERE CLEANLY
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXPrUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
 // Master memory storage registries synced directly to your spreadsheet
 let REGISTERED_USERS = [];
 let BOOKING_RECORDS = [];
+
+// Helper function to strip whitespace and normalize cell logs safely during background data pulls
+function cleanIncomingStringDate(val) {
+    if (!val) return "";
+    return val.toString().replace(/\s+/g, '').trim();
+}
 
 // Helper to sanitize asset string variation name blocks safely across tabs
 function standardizeCourtAssetName(name) {
@@ -34,10 +40,14 @@ async function syncDatabaseMemoryPool() {
     
     if (data.users) REGISTERED_USERS = data.users;
     
-    // Normalizes oncoming database strings to prevent screen freeze skips cleanly
+    // Clean string components safely during dynamic pool data syncs
     if (data.bookings) {
         BOOKING_RECORDS = data.bookings.map(b => {
-            return { ...b, court_name: standardizeCourtAssetName(b.court_name) };
+            return { 
+                ...b, 
+                date: cleanIncomingStringDate(b.date),
+                court_name: standardizeCourtAssetName(b.court_name)
+            };
         });
     }
     
@@ -107,18 +117,16 @@ app.post('/api/fetch-logs', (req, res) => {
 app.post('/api/secure-booking', async (req, res) => {
   try {
     const bookingId = `b_${Math.floor(1000 + Math.random() * 9000)}`;
-    const standardizedCourt = standardizeCourtAssetName(req.body.courtName);
-    
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: "secureBooking",
         bookingId: bookingId,
-        courtName: standardizedCourt,
+        courtName: req.body.courtName,
         sportType: req.body.sportType,
         userName: req.body.userName,
-        date: req.body.date,
+        date: req.body.date ? req.body.date.toString().trim() : "",
         timeSlot: req.body.timeSlot
       })
     });
