@@ -287,7 +287,7 @@
 
     function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
-    // 🎯 STRIP AWAY ALL LEADING ZERO-PADDING DISCREPANCIES (Locks 12/06 vs 12/6 checks securely)
+    // 🎯 STRIP DISCREPANCIES (Locks date validation cleanly across format flips)
     function sanitizeUIDate(input) {
         if(!input) return "";
         let str = input.toString().trim().split(' ')[0].split('T')[0];
@@ -334,7 +334,7 @@
         if(targetView === 'reset') document.getElementById('viewResetPanel').classList.remove('hidden');
     }
 
-    // 🎯 RE-MAPPED TOKENIZER FOR EXTRINSIC COURT ALIGNMENTS
+    // 🎯 ASSET TOKENIZER
     function extractNormalizedAssetToken(name) {
         if(!name) return "";
         let str = name.toString().toLowerCase().trim();
@@ -474,7 +474,7 @@
         syncUserLogsAndMatrix();
     }
 
-    // 🔒 THE ABSOLUTE STATE ENFORCEMENT ENGINE
+    // 🔒 THE ABSOLUTE POSITION STATE ENGINE
     function renderUserMatrixGridUI() {
         const grid = document.getElementById('userTimeSlotMatrixGrid'); if(!grid) return;
         const nowIST = getNowLocalIST();
@@ -504,7 +504,7 @@
                     stateLabel = "Your Locked Session";
                     action = `onclick="forceUserSelfRelease('${rowMatch.booking_id}')"`;
                 } else {
-                    // 🔒 HARD BOUNDARY LOCK: Strictly forces other users' booked slots to freeze as an immutable "Booked" item.
+                    // 🔒 HARD BOUNDARY LOCK: Freezes other members' slots instantly
                     cardStyle = "bg-slate-900 border-slate-950 text-slate-600 cursor-not-allowed opacity-40";
                     stateLabel = "Booked";
                     action = "";
