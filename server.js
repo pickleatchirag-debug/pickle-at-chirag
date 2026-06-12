@@ -10,24 +10,23 @@ app.use(express.static(__dirname));
 // 🎯 SECURE ACTIVE GOOGLE WEB APP EXEC LINK STRINGS
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
-// Master memory storage registries synced directly to your spreadsheet
 let REGISTERED_USERS = [];
 let BOOKING_RECORDS = [];
+let ADMIN_REGISTRY = [];
 
 function cleanIncomingStringDate(val) {
     if (!val) return "";
     return val.toString().replace(/\s+/g, '').trim();
 }
 
-// 🔄 SYNC PIPELINE RUNTIME ENGINE LOOP
 async function syncDatabaseMemoryPool() {
   try {
     const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`);
     if (!response.ok) throw new Error("Google Sheets network connection dropped.");
-    
     const data = await response.json();
     
     if (data.users) REGISTERED_USERS = data.users;
+    if (data.admins) ADMIN_REGISTRY = data.admins;
     if (data.bookings) {
         BOOKING_RECORDS = data.bookings.map(b => {
             return { 
@@ -37,102 +36,72 @@ async function syncDatabaseMemoryPool() {
             };
         });
     }
-    
-    console.log(`⚡ Sync complete. Users loaded: ${REGISTERED_USERS.length} | Active Bookings: ${BOOKING_RECORDS.length}`);
+    console.log(`⚡ Sync complete. Bookings: ${BOOKING_RECORDS.length} | Admins Whitelisted: ${ADMIN_REGISTRY.length}`);
   } catch (e) {
-    console.log("Database Sync Connection Pause... Retrying structural stream:", e.message);
+    console.log("Database Sync Connection Pause:", e.message);
   }
 }
 setInterval(syncDatabaseMemoryPool, 4000);
 syncDatabaseMemoryPool();
 
-// 🔑 AUTHENTICATION HANDSHAKE ENDPOINT
+// RESIDENT PORTAL LOGIN HANDSHAKE
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ status: "error", message: "Missing email or password." });
-  }
-
   const match = REGISTERED_USERS.find(u => u.google_email.trim().toLowerCase() === email.trim().toLowerCase());
-  
   if (!match || match.password !== password || match.full_name === "Pending Signup") {
-    return res.status(401).json({ status: "error", message: "Invalid credentials or account setup uninitialized." });
+    return res.status(401).json({ status: "error", message: "Invalid credentials." });
   }
-
   const token = `sess_${Buffer.from(match.google_email).toString('base64')}`;
-  res.json({
-    status: "success",
-    token: token,
-    user: { full_name: match.full_name, google_email: match.google_email },
-    activeTokens: match.available_tokens ?? 2,
-    ticker: "Sync Completed. Welcome back to Chirag Sports Portal."
-  });
+  res.json({ status: "success", token, user: { full_name: match.full_name, google_email: match.google_email }, activeTokens: match.available_tokens ?? 2 });
 });
 
-// 👥 ADVANCED REGISTER ENDPOINT (Supports Admin Whitelists for ALL multi-domain email accounts)
+// 🎯 NEW: ADMIN CENTER LOGIN HANDSHAKE (Checks Admin_Directory tab exclusively)
+app.post('/api/admin/login', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ status: "error", message: "Missing email or password fields." });
+
+  const adminMatch = ADMIN_REGISTRY.find(a => a.email.toLowerCase().trim() === email.toLowerCase().trim());
+  if (!adminMatch || adminMatch.password !== password) {
+    return res.status(401).json({ status: "error", message: "Access Denied. Invalid Admin credentials." });
+  }
+
+  const adminToken = `adm_${Buffer.from(adminMatch.email).toString('base64')}`;
+  res.json({ status: "success", token: adminToken, name: adminMatch.full_name });
+});
+
 app.post('/api/register', async (req, res) => {
   try {
     const existingWhitelistRow = REGISTERED_USERS.find(u => u.google_email.toLowerCase() === req.body.email.toLowerCase());
-    
-    if (existingWhitelistRow && existingWhitelistRow.full_name !== "Pending Signup" && req.body.fullName !== "Pending Signup") {
-        return res.json({ status: "error", message: "This email address is already registered on the active roster." });
-    }
-
     let payloadAction = "addRegistration";
-    
-    if (existingWhitelistRow && existingWhitelistRow.full_name === "Pending Signup" && req.body.fullName !== "Pending Signup") {
-        payloadAction = "initializeMemberOverwrite";
-    }
+    if (existingWhitelistRow && existingWhitelistRow.full_name === "Pending Signup") payloadAction = "initializeMemberOverwrite";
 
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: payloadAction,
-        fullName: req.body.fullName,
-        email: req.body.email.toLowerCase().trim(),
-        registrationCode: req.body.registrationCode,
-        password: req.body.password
-      })
+      body: JSON.stringify({ action: payloadAction, fullName: req.body.fullName, email: req.body.email.toLowerCase().trim(), registrationCode: req.body.registrationCode, password: req.body.password })
     });
-    
     const data = await response.json();
     if (data.status === "success" || data.result === "success") syncDatabaseMemoryPool();
     res.json(data);
-  } catch(err) {
-    res.status(500).json({ status: "error", message: err.toString() });
-  }
+  } catch(err) { res.status(500).json({ status: "error", message: err.toString() }); }
 });
 
-// 🗂️ FETCH LIVE WORKSPACE RECORDS LOGS
 app.post('/api/fetch-logs', (req, res) => { res.json({ records: BOOKING_RECORDS }); });
 
-// 🔒 SECURE BOOKING EXECUTION ROUTE
 app.post('/api/secure-booking', async (req, res) => {
   try {
     const bookingId = `b_${Math.floor(1000 + Math.random() * 9000)}`;
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: "secureBooking",
-        bookingId: bookingId,
-        courtName: req.body.courtName,
-        sportType: req.body.sportType,
-        userName: req.body.userName,
-        date: req.body.date,
-        timeSlot: req.body.timeSlot
-      })
+      body: JSON.stringify({ action: "secureBooking", bookingId: bookingId, courtName: req.body.courtName, sportType: req.body.sportType, userName: req.body.userName, date: req.body.date, timeSlot: req.body.timeSlot })
     });
     const data = await response.json();
     if (data.status === "success" || data.result === "success") syncDatabaseMemoryPool();
     res.json(data);
-  } catch(err) {
-    res.status(500).json({ status: "error", message: err.toString() });
-  }
+  } catch(err) { res.status(500).json({ status: "error", message: err.toString() }); }
 });
 
-// 🔓 RELEASE BOOKING SLOT ROUTE
 app.post('/api/release-booking', async (req, res) => {
   try {
     const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -143,9 +112,7 @@ app.post('/api/release-booking', async (req, res) => {
     const data = await response.json();
     if (data.status === "success" || data.result === "success") syncDatabaseMemoryPool();
     res.json(data);
-  } catch(err) {
-    res.status(500).json({ status: "error", message: err.toString() });
-  }
+  } catch(err) { res.status(500).json({ status: "error", message: err.toString() }); }
 });
 
 app.post('/api/admin/get-users', (req, res) => { res.json({ users: REGISTERED_USERS }); });
@@ -154,26 +121,16 @@ app.post('/api/admin/adjust-tokens', async (req, res) => {
   const { email, delta } = req.body;
   const match = REGISTERED_USERS.find(u => u.google_email.toLowerCase() === email.toLowerCase());
   if (!match) return res.status(404).json({ status: "error", message: "User profile targets missing." });
-  
   const targetNewBalance = Math.max(0, (match.available_tokens || 0) + delta);
   try {
     await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: "updateRow",
-        tabName: "Member_Directory",
-        keyColumn: "google_email",
-        keyValue: email,
-        updateColumn: "available_tokens",
-        updateValue: targetNewBalance
-      })
+      body: JSON.stringify({ action: "updateRow", tabName: "Member_Directory", keyColumn: "google_email", keyValue: email, updateColumn: "available_tokens", updateValue: targetNewBalance })
     });
     match.available_tokens = targetNewBalance;
     res.json({ status: "success", newTokens: targetNewBalance });
-  } catch (err) {
-    res.status(500).json({ status: "error", message: "Outbound update failed." });
-  }
+  } catch (err) { res.status(500).json({ status: "error", message: "Outbound update failed." }); }
 });
 
 app.listen(3000, () => console.log('Chirag Sports Admin Engine running on port 3000.'));
