@@ -287,25 +287,38 @@
 
     function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
-    // 🎯 SMART MULTI-FORMAT STRIPPER ENGINE (Locks matches by forcing true integer string comparisons)
+    // 🎯 RE-BUILT INTELLIGENT COMPEL ENGINE (Handles text dates or serialized right-aligned Google Sheet Date objects flawlessly)
     function sanitizeUIDate(input) {
         if(!input) return "";
         let str = input.toString().replace(/\s+/g, '').trim();
         str = str.replace(/-/g, '/');
         
-        let parts = str.split('/');
-        if (parts.length === 3) {
-            let day = parseInt(parts[0], 10);
-            let month = parseInt(parts[1], 10);
-            let year = parseInt(parts[2], 10);
-            
-            // Handles yyyy/mm/dd database structure outputs safely
-            if (parts[0].length === 4) {
-                year = parseInt(parts[0], 10);
-                month = parseInt(parts[1], 10);
-                day = parseInt(parts[2], 10);
+        // Formatter Layer A: Handle simple text structures (like 13/06/2026)
+        if (str.includes('/')) {
+            let parts = str.split('/');
+            if (parts.length === 3) {
+                let d = parseInt(parts[0], 10);
+                let m = parseInt(parts[1], 10);
+                let y = parts[2];
+                // Check if layout came across as yyyy/mm/dd instead
+                if (parts[0].length === 4) {
+                    y = parseInt(parts[0], 10);
+                    m = parseInt(parts[1], 10);
+                    d = parseInt(parts[2], 10);
+                }
+                return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
             }
-            return `${String(day).padStart(2,'0')}/${String(month).padStart(2,'0')}/${year}`;
+            return str;
+        }
+
+        // Formatter Layer B: Intercept Right-Aligned serial date objects from Google Apps Script snapshots
+        let timestampCheck = Date.parse(input);
+        if (!isNaN(timestampCheck)) {
+            let d = new Date(timestampCheck);
+            let day = String(d.getDate()).padStart(2, '0');
+            let month = String(d.getMonth() + 1).padStart(2, '0');
+            let year = d.getFullYear();
+            return `${day}/${month}/${year}`;
         }
         return str;
     }
@@ -506,7 +519,6 @@
                     stateLabel = "Your Locked Session";
                     action = `onclick="forceUserSelfRelease('${rowMatch.booking_id}')"`;
                 } else {
-                    // 🔒 LOCKDOWN SEAMLESS: Blocks double booking across format anomalies safely
                     cardStyle = "bg-slate-900 border-slate-950 text-slate-600 cursor-not-allowed opacity-40";
                     stateLabel = "Booked";
                     action = "";
