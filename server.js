@@ -7,13 +7,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🎯 ACTIVE GOOGLE WEB APP DEPLOYMENT LINK URL
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXPrUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvD0eS/exec";
+// 🎯 REPLACE THIS WITH YOUR ACTIVE GOOGLE WEB APP EXEC DEPLOYMENT URL STRING
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
 let REGISTERED_USERS = [];
 let BOOKING_RECORDS = [];
 
-// 🔄 RE-ENGINEERED BACKGROUND MEMORY SYNCHRONIZATION LEDGER PIPE
+// 🔄 BACKGROUND DATA POLL SYNCHRONIZATION ENGINE LOOP
 async function syncDatabaseMemoryPool() {
   try {
     let response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`);
@@ -79,7 +79,7 @@ app.post('/api/fetch-logs', (req, res) => {
   res.json({ records: BOOKING_RECORDS });
 });
 
-// 🔒 THE ABSOLUTE POSITION LOCKING WRITER
+// 🔒 THE ABSOLUTE POSITION LOCKING WRITER - MATALS COLUMNS PERFECTLY
 app.post('/api/secure-booking', async (req, res) => {
   const { courtName, sportType, userName, date, timeSlot } = req.body;
   try {
