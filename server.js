@@ -7,40 +7,38 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🎯 PASTE YOUR LIVE GOOGLE SCRIPT WEB APP EXTENSION LINK HERE HERE
+// 🎯 MAKE SURE THIS IS YOUR ACTIVE GOOGLE SHEETS WEB APP URL FROM CODE.GS
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec";
 
-// Master memory storage registries synced directly to your spreadsheet
 let REGISTERED_USERS = [];
 let BOOKING_RECORDS = [];
+let ADMIN_MANAGERS = [];
 
-// 🔄 SYNC PIPELINE RUNTIME ENGINE LOOP (Aligned perfectly with Code.gs getSnapshot)
+function getTodayFormattedIST(offsetDays = 0) {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  d.setDate(d.getDate() + offsetDays);
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+// 🔄 SYNC PIPELINE RUNTIME ENGINE LOOP
 async function syncDatabaseMemoryPool() {
   try {
-    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`);
-    if (!response.ok) throw new Error("Google Sheets network connection dropped.");
+    let response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`);
+    if (!response.ok) throw new Error("Outbound bridge network error.");
     
-    const data = await response.json();
-    
+    let data = await response.json();
     if (data.users) REGISTERED_USERS = data.users;
     if (data.bookings) BOOKING_RECORDS = data.bookings;
-    
-    console.log(`⚡ Sync complete. Users loaded: ${REGISTERED_USERS.length} | Active Bookings: ${BOOKING_RECORDS.length}`);
   } catch (e) {
-    console.log("Database Sync Connection Pause... Retrying structural stream:", e.message);
+    console.log("Database Sync Connection Pause... Retrying structural stream.");
   }
 }
-// Keep data perfectly fresh by polling every 4 seconds
 setInterval(syncDatabaseMemoryPool, 4000);
 syncDatabaseMemoryPool();
 
-// 🔑 AUTHENTICATION HANDSHAKE ENDPOINT
+// Auth Endpoints
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ status: "error", message: "Missing email or password." });
-  }
-
   const match = REGISTERED_USERS.find(u => u.google_email.trim().toLowerCase() === email.trim().toLowerCase());
   
   if (!match || match.password !== password) {
@@ -56,78 +54,77 @@ app.post('/api/login', (req, res) => {
       google_email: match.google_email
     },
     activeTokens: match.available_tokens ?? 2,
-    ticker: "Sync Completed. Welcome back to Chirag Sports Portal."
+    ticker: "Sync Completed. All live court assets unsealed."
   });
 });
 
-// 👥 REGISTER ACCOUNT ENDPOINT
 app.post('/api/register', async (req, res) => {
+  const { email, fullName, registrationCode, password } = req.body;
   try {
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
+    let response = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: "addRegistration",
-        fullName: req.body.fullName,
-        email: req.body.email,
-        registrationCode: req.body.registrationCode,
-        password: req.body.password
+        fullName: fullName,
+        email: email,
+        registrationCode: registrationCode,
+        password: password
       })
     });
-    const data = await response.json();
-    if (data.status === "success") syncDatabaseMemoryPool();
+    let data = await response.json();
+    syncDatabaseMemoryPool();
     res.json(data);
   } catch(err) {
     res.status(500).json({ status: "error", message: err.toString() });
   }
 });
 
-// 🗂️ FETCH LIVE WORKSPACE RECORDS LOGS
 app.post('/api/fetch-logs', (req, res) => {
   res.json({ records: BOOKING_RECORDS });
 });
 
-// 🔒 SECURE BOOKING EXECUTION DISPATCHER ROUTE
 app.post('/api/secure-booking', async (req, res) => {
+  const { courtName, sportType, userName, date, timeSlot } = req.body;
   try {
     const bookingId = `b_${Math.floor(1000 + Math.random() * 9000)}`;
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
+    let response = await fetch(GOOGLE_SCRIPT_URL, { 
+      method: "POST", 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: "secureBooking",
         bookingId: bookingId,
-        courtName: req.body.courtName,
-        sportType: req.body.sportType,
-        userName: req.body.userName,
-        date: req.body.date,
-        timeSlot: req.body.timeSlot
+        courtName: courtName,
+        sportType: sportType,
+        userName: userName,
+        date: date,
+        timeSlot: timeSlot
       })
     });
-    const data = await response.json();
-    if (data.status === "success") syncDatabaseMemoryPool();
+    let data = await response.json();
+    syncDatabaseMemoryPool();
     res.json(data);
-  } catch(err) {
-    res.status(500).json({ status: "error", message: err.toString() });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: "Operational pipeline timeout. Direct row entry dropped." });
   }
 });
 
-// 🔓 RELEASE BOOKING SLOT DISPATCHER ROUTE
 app.post('/api/release-booking', async (req, res) => {
+  const { bookingId } = req.body;
   try {
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
+    let response = await fetch(GOOGLE_SCRIPT_URL, { 
+      method: "POST", 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: "removeBooking",
-        bookingId: req.body.bookingId
+        bookingId: bookingId
       })
     });
-    const data = await response.json();
-    if (data.status === "success") syncDatabaseMemoryPool();
+    let data = await response.json();
+    syncDatabaseMemoryPool();
     res.json(data);
-  } catch(err) {
-    res.status(500).json({ status: "error", message: err.toString() });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: "Failed to release session." });
   }
 });
 
