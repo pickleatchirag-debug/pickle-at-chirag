@@ -287,12 +287,10 @@
 
     function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
-    // 🎯 RE-ENGINEERED DATE PARSER WRAPPER (Handles direct raw strings or ISO dates cleanly)
     function sanitizeUIDate(input) {
         if(!input) return "";
         let str = input.toString().trim();
         
-        // If it's already a standard slash string format, enforce two-digit padding layout
         if(str.includes('/')) {
             let parts = str.split('/');
             if(parts.length === 3) {
@@ -301,12 +299,10 @@
             return str;
         }
 
-        // If it's an ISO string timeline timestamp
         if(str.includes('T') || str.includes('-')) {
             let clean = str.split(' ')[0].split('T')[0].replace(/-/g, '/');
             let parts = clean.split('/');
             if(parts.length === 3) {
-                // If year comes first (yyyy/mm/dd)
                 if(parts[0].length === 4) {
                     return `${String(parts[2]).padStart(2,'0')}/${String(parts[1]).padStart(2,'0')}/${parts[0]}`;
                 }
@@ -480,12 +476,11 @@
         syncUserLogsAndMatrix();
     }
 
+    // 🔒 THE ABSOLUTE STATE ENFORCEMENT ENGINE
     function renderUserMatrixGridUI() {
         const grid = document.getElementById('userTimeSlotMatrixGrid'); if(!grid) return;
-        const nowIST = getNowLocalIST();
         const targetToken = extractNormalizedAssetToken(selectedUserAsset);
         
-        // Standardizes both selection and incoming log paths dynamically
         const sanitizedSelectedDate = sanitizeUIDate(selectedUserDateStr);
         const activeFilteredLogs = userActiveBookingsLogs.filter(l => 
             extractNormalizedAssetToken(l.court_name) === targetToken && 
@@ -495,23 +490,19 @@
         let newHTML = "";
         TIME_SLOTS.forEach(slot => {
             const rowMatch = activeFilteredLogs.find(l => l.time_slot.trim() === slot.trim());
-            const isPast = nowIST >= parseUIDateToAbsoluteObject(selectedUserDateStr, slot);
             
+            // 🎯 CRITICAL REMOVAL: Past hours checking engine has been stripped out completely!
             let cardStyle = "bg-slate-950 border-slate-900 text-slate-300 hover:border-slate-800 cursor-pointer";
-            let stateLabel = "Available Slot"; let action = `onclick="selectTentativeUserSlot('${slot}')"`;
+            let stateLabel = "Available Slot"; 
+            let action = `onclick="selectTentativeUserSlot('${slot}')"`;
 
-            if(isPast) {
-                cardStyle = "bg-slate-900/10 border-slate-950 text-slate-700 line-through cursor-not-allowed";
-                stateLabel = "Expired Slot"; action = "";
-            } else if(rowMatch) {
+            if(rowMatch) {
                 let isMine = rowMatch.booked_by === sessionMemberProfile.full_name;
-                
                 if (isMine) {
                     cardStyle = "bg-red-950/20 border-red-500 text-red-400 font-bold cursor-pointer";
                     stateLabel = "Your Locked Session";
                     action = `onclick="forceUserSelfRelease('${rowMatch.booking_id}')"`;
                 } else {
-                    // 🔒 HARD BOUNDARY LOCK: Freezes other users' booked slots instantly into their "Booked" state label cards
                     cardStyle = "bg-slate-900 border-slate-950 text-slate-600 cursor-not-allowed opacity-40";
                     stateLabel = "Booked";
                     action = "";
