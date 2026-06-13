@@ -252,6 +252,9 @@
             }
         }, 1000);
         initiateSmartPwaBannerSystem();
+        
+        // 🚀 AUTO-LOGIN RUNTIME PULSE: Triggers immediately when page completes loading
+        enforcePersistentThirtyDaySession();
     });
 
     function initiateSmartPwaBannerSystem() {
@@ -287,20 +290,17 @@
 
     function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
 
-    // 🎯 RE-BUILT INTELLIGENT COMPEL ENGINE (Handles text dates or serialized right-aligned Google Sheet Date objects flawlessly)
     function sanitizeUIDate(input) {
         if(!input) return "";
         let str = input.toString().replace(/\s+/g, '').trim();
         str = str.replace(/-/g, '/');
         
-        // Formatter Layer A: Handle simple text structures (like 13/06/2026)
         if (str.includes('/')) {
             let parts = str.split('/');
             if (parts.length === 3) {
                 let d = parseInt(parts[0], 10);
                 let m = parseInt(parts[1], 10);
                 let y = parts[2];
-                // Check if layout came across as yyyy/mm/dd instead
                 if (parts[0].length === 4) {
                     y = parseInt(parts[0], 10);
                     m = parseInt(parts[1], 10);
@@ -311,7 +311,6 @@
             return str;
         }
 
-        // Formatter Layer B: Intercept Right-Aligned serial date objects from Google Apps Script snapshots
         let timestampCheck = Date.parse(input);
         if (!isNaN(timestampCheck)) {
             let d = new Date(timestampCheck);
@@ -413,6 +412,10 @@
         });
     }
 
+    // =================================================================
+    // ⚙️ AUTHENTICATION OVERHAUL WITH 30-DAY CACHE PROTOCOL            
+    // =================================================================
+
     function executeMemberLoginHandshake() {
         const email = document.getElementById('loginEmailField').value.trim();
         const password = document.getElementById('loginPasswordField').value.trim();
@@ -427,8 +430,15 @@
         .then(r => r.json()).then(res => {
             if(res.status === "error") return alert(res.message);
             
+            // 💾 CACHE TRANSITION: Lock tokens to permanent Local Storage memory
+            localStorage.setItem("chirag_pwa_token", res.token);
+            localStorage.setItem("chirag_pwa_profile", JSON.stringify(res.user));
+            localStorage.setItem("chirag_pwa_active_tokens", res.activeTokens);
+            localStorage.setItem("chirag_pwa_login_time", Date.now().toString());
+
             secureUserSessionToken = res.token;
             sessionMemberProfile = res.user;
+            
             document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
             document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
             document.getElementById('lblWorkspaceAvailableTokens').innerText = res.activeTokens;
@@ -440,6 +450,58 @@
         })
         .catch(() => alert("Authorization channel offline."));
     }
+
+    function enforcePersistentThirtyDaySession() {
+        try {
+            const savedToken = localStorage.getItem("chirag_pwa_token");
+            const savedProfile = localStorage.getItem("chirag_pwa_profile");
+            const savedTokensCount = localStorage.getItem("chirag_pwa_active_tokens");
+            const loginTime = localStorage.getItem("chirag_pwa_login_time");
+
+            if (savedToken && savedProfile && loginTime) {
+                const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+                const timeElapsed = Date.now() - parseInt(loginTime, 10);
+
+                // 🛡️ Verify if session duration falls within 30 days limitation parameters
+                if (timeElapsed < thirtyDaysInMs) {
+                    secureUserSessionToken = savedToken;
+                    sessionMemberProfile = JSON.parse(savedProfile);
+
+                    document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
+                    document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
+                    document.getElementById('lblWorkspaceAvailableTokens').innerText = savedTokensCount || "2";
+                    
+                    toggleInterfaceView('workspace');
+                    initUserCalendarStrip();
+                    startPollingLiveWorkspaceLogs();
+                    return;
+                }
+            }
+        } catch(e) {
+            console.log("Memory session rehydration paused safely:", e);
+        }
+    }
+
+    function executeLogoutSequence() {
+        if(confirm("Confirm logging out of active workspace context?")) {
+            // WIPE OUT PERSISTENT LOCAL STORAGE COMPLETELY
+            localStorage.removeItem("chirag_pwa_token");
+            localStorage.removeItem("chirag_pwa_profile");
+            localStorage.removeItem("chirag_pwa_active_tokens");
+            localStorage.removeItem("chirag_pwa_login_time");
+
+            sessionMemberProfile = null; secureUserSessionToken = ""; selectedTentativeSlotMemory = "";
+            document.getElementById('loginEmailField').value = ""; document.getElementById('loginPasswordField').value = "";
+            
+            toggleInterfaceView('login');
+            document.getElementById('pwaGlobalInstallBanner').classList.remove('hidden');
+            initiateSmartPwaBannerSystem();
+        }
+    }
+
+    // =================================================================
+    // 📊 CORE APPLICATION RENDERING PIPELINES (100% UNTOUCHED)        
+    // =================================================================
 
     function startPollingLiveWorkspaceLogs() {
         syncUserLogsAndMatrix();
@@ -658,16 +720,6 @@
                 alert(res.message);
             }
         });
-    }
-
-    function executeLogoutSequence() {
-        if(confirm("Confirm logging out of active workspace context?")) {
-            sessionMemberProfile = null; secureUserSessionToken = ""; selectedTentativeSlotMemory = "";
-            document.getElementById('loginEmailField').value = ""; document.getElementById('loginPasswordField').value = "";
-            toggleInterfaceView('login');
-            document.getElementById('pwaGlobalInstallBanner').classList.remove('hidden');
-            initiateSmartPwaBannerSystem();
-        }
     }
   </script>
 </body>
