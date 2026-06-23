@@ -2,13 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Chirag Sports Portal — Admin Command Center</title>
   
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Admin at Chirag">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="/icon-192.png?v=2.0.0">
+
   <meta name="theme-color" content="#020617">
   <script src="https://cdn.tailwindcss.com"></script>
   
   <style>
+    html, body { overscroll-behavior-y: contain; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #020617; }
     ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
@@ -51,7 +58,6 @@
   </div>
 
   <main id="adminProtectedWorkspaceConsole" class="hidden p-4 max-w-4xl mx-auto w-full flex-1 space-y-6">
-    
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-slate-900 to-sky-950/20 border border-slate-800 p-5 rounded-2xl gap-4 shadow-xl">
       <div class="flex items-center space-x-4">
         <div class="text-3xl bg-sky-500/10 border border-sky-500/20 p-3 rounded-2xl text-center shadow-inner">🛡️</div>
@@ -87,12 +93,9 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
       <div class="lg:col-span-7 space-y-6">
-        
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
           <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2">➕ Whitelist Resident Email Gateway</h2>
-          <p class="text-[11px] text-slate-400 mt-1">Input any residential email address (Gmail, Outlook, Yahoo, iCloud, etc.). Members will fill in their name, unit code, and password keys themselves upon first portal setup initialization.</p>
           <div class="space-y-1 text-xs">
             <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Resident Email Address</label>
             <input type="email" id="whitelistAdminEmail" placeholder="member-name@email.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 focus:outline-none focus:border-sky-500 text-slate-100 placeholder-slate-600 font-mono">
@@ -104,7 +107,6 @@
 
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
           <h2 class="text-xs font-black text-amber-400 uppercase tracking-widest border-b border-slate-800 pb-2">📊 Club Activity Report Generator</h2>
-          <p class="text-[11px] text-slate-400">Compile and export live on-demand database extracts straight to standard `.csv` spreadsheets compatible with Excel.</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <button onclick="exportReportToCSV('bookings')" class="flex items-center justify-between bg-slate-950 hover:bg-slate-800/60 border border-slate-800 p-3.5 rounded-xl transition-all text-left cursor-pointer group">
               <div>
@@ -164,12 +166,34 @@
         }
     }
 
-    // 🔒 HANDSHAKE VERIFICATION LOOP (Queries Admin_Directory tab exclusively)
+    function sanitizeUIDate(input) {
+      if(!input) return "";
+      let str = input.toString().replace(/\s+/g, '').trim().replace(/-/g, '/');
+      if (str.includes('/')) {
+        let parts = str.split('/');
+        if (parts.length === 3) {
+          let d = parseInt(parts[0], 10); let m = parseInt(parts[1], 10); let y = parts[2];
+          if (parts[0].length === 4) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10); d = parseInt(parts[2], 10); }
+          return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+        }
+      }
+      return str;
+    }
+
+    function parseUIDateToAbsoluteObject(dateStr, timeSlotStr) {
+      try {
+        const cleanDate = sanitizeUIDate(dateStr);
+        const [d, m, y] = cleanDate.split('/');
+        const [startHourStr] = timeSlotStr.split(' - ');
+        const [hour, minutes] = startHourStr.split(':');
+        return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hour, 10), parseInt(minutes || 0, 10), 0);
+      } catch(e) { return new Date(); }
+    }
+
     function executeAdminSecurityHandshake() {
         const email = document.getElementById('adminGateEmail').value.trim();
         const password = document.getElementById('adminGatePassword').value.trim();
-
-        if(!email || !password) return alert("Please specify admin authentication credentials.");
+        if(!email || !password) return alert("Please specify admin credentials.");
 
         fetch('/api/admin/login', {
             method: 'POST',
@@ -184,11 +208,8 @@
             secureAdminSessionToken = res.token;
             document.getElementById('lblActiveAdminName').innerText = res.name;
             document.getElementById('lblConnectionStatus').innerText = "✓ Console Operational Sync Active.";
-            
-            // Unveil the console view panels
             document.getElementById('adminSecurityGateShield').classList.add('hidden');
             document.getElementById('adminProtectedWorkspaceConsole').classList.remove('hidden');
-            
             startActiveAdminPolling();
         })
         .catch(err => alert("Access Denied: Administrative authority could not be verified."));
@@ -229,7 +250,7 @@
         const filtered = GLOBAL_ADMIN_USERS.filter(u => 
             u.full_name.toLowerCase().includes(search) || 
             u.google_email.toLowerCase().includes(search) ||
-            u.registration_code.toLowerCase().includes(search)
+            (u.registration_code && u.registration_code.toLowerCase().includes(search))
         );
 
         if(filtered.length === 0) {
@@ -246,32 +267,30 @@
                     <h4 class="text-xs font-black text-slate-100">${u.full_name}${userCardLabel} <span class="text-[10px] text-sky-400 font-mono font-bold ml-1">[Code: ${u.registration_code || "Uninitialized"}]</span></h4>
                     <p class="text-[10px] text-slate-400 font-mono mt-0.5">${u.google_email}</p>
                   </div>
-                  <div class="text-right">
-                    <span class="text-[9px] uppercase font-black text-slate-500 block tracking-wide">Tokens</span>
-                    <span class="text-sm font-black font-mono text-amber-400">${u.available_tokens}</span>
-                  </div>
                 </div>
                 <div class="flex items-center justify-between pt-2 border-t border-slate-900/60 text-[10px]">
                   <span class="text-slate-500 font-mono">Password Key: <span class="text-slate-300 select-all font-bold">${u.password || "Awaiting Custom Configuration"}</span></span>
-                  <div class="flex space-x-1.5">
-                    <button onclick="executeAdminAdjustTokens('${u.google_email}', -1)" class="bg-slate-900 border border-slate-800 text-red-400 hover:bg-red-500/10 font-bold px-2 py-1 rounded-md transition-all shrink-0 cursor-pointer">-1</button>
-                    <button onclick="executeAdminAdjustTokens('${u.google_email}', 1)" class="bg-slate-900 border border-slate-800 text-emerald-400 hover:bg-emerald-500/10 font-bold px-2 py-1 rounded-md transition-all shrink-0 cursor-pointer">+1</button>
-                  </div>
                 </div>
               </div>`;
         });
     }
 
+    // 🔄 ORDERING FIX INJECTED NATIVELY AT UI RENDER LOOP
     function renderAdminMasterSchedule() {
         const container = document.getElementById('adminMasterScheduleContainer'); if(!container) return;
         container.innerHTML = "";
 
         if(GLOBAL_ADMIN_BOOKINGS.length === 0) {
-            container.innerHTML = `<p class="text-xs text-slate-500 text-center py-12 font-medium">Zero current schedule reservations locked across club spreadsheets.</p>`;
+            container.innerHTML = `<p class="text-xs text-slate-500 text-center py-12 font-medium">Zero current schedule reservations locked.</p>`;
             return;
         }
 
-        let sorted = [...GLOBAL_ADMIN_BOOKINGS].sort((a,b) => String(a.date).localeCompare(String(b.date)) || String(a.time_slot).localeCompare(String(b.time_slot)));
+        // Parse absolute dates to ensure accurate sorting parameters
+        let sorted = [...GLOBAL_ADMIN_BOOKINGS].sort((a, b) => {
+          let timeA = parseUIDateToAbsoluteObject(a.date, a.time_slot);
+          let timeB = parseUIDateToAbsoluteObject(b.date, b.time_slot);
+          return timeB - timeA; // Float newest entries directly to the top view
+        });
 
         sorted.forEach(b => {
             let marker = b.court_name.includes('Badminton') ? "🏸" : "🏓";
@@ -281,7 +300,7 @@
                   <div class="text-base">${marker}</div>
                   <div>
                     <h4 class="text-xs font-bold text-slate-200">${b.court_name}</h4>
-                    <p class="text-[10px] text-slate-400 font-mono mt-0.5">${b.date} | ${b.time_slot}</p>
+                    <p class="text-[10px] text-slate-400 font-mono mt-0.5">${sanitizeUIDate(b.date)} | ${b.time_slot}</p>
                     <p class="text-[9px] font-black text-sky-400 uppercase mt-0.5 tracking-wider">Player: ${b.booked_by}</p>
                   </div>
                 </div>
@@ -294,7 +313,7 @@
 
     function executeAdminEmailWhitelistOnly() {
         const email = document.getElementById('whitelistAdminEmail').value.trim();
-        if(!email || !email.includes('@')) return alert("Please specify a valid email address to whitelist.");
+        if(!email || !email.includes('@')) return alert("Please specify a valid email address.");
 
         fetch('/api/register', {
             method: 'POST',
@@ -303,62 +322,38 @@
         })
         .then(r => r.json())
         .then(res => {
-            if(res.status === "success" || res.result === "success") {
-                alert("✓ Email address successfully authorized! Access gate unlocked.");
+            if(res.status === "success") {
+                alert("✓ Email address successfully authorized!");
                 document.getElementById('whitelistAdminEmail').value = "";
                 fetchAllAdminData();
-            } else {
-                alert(res.message || "Operation dropped by core script.");
-            }
-        });
-    }
-
-    function executeAdminAdjustTokens(email, delta) {
-        fetch('/api/admin/adjust-tokens', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, delta })
-        })
-        .then(r => r.json())
-        .then(res => {
-            if(res.status === "success") fetchAllAdminData();
-            else alert(res.message);
+            } else { alert(res.message || "Operation dropped by core script."); }
         });
     }
 
     function executeAdminForceRevoke(bookingId) {
-        if(confirm("🔒 ADMINISTRATIVE SECURITY OVERRIDE:\nAre you sure you want to force-revoke this reservation row? The resident's token balance will be fully restored automatically.")) {
+        if(confirm("🔒 ADMINISTRATIVE SECURITY OVERRIDE:\nAre you sure you want to force-revoke this reservation row?")) {
             fetch('/api/release-booking', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ bookingId })
             })
             .then(r => r.json())
-            .then(res => {
-                if(res.status === "success") fetchAllAdminData();
-                else alert(res.message);
-            });
+            .then(res => { if(res.status === "success") fetchAllAdminData(); });
         }
     }
 
     function exportReportToCSV(type) {
         let csvContent = "data:text/csv;charset=utf-8,";
         let filename = "";
-
         if (type === 'bookings') {
             filename = "Chirag_Club_Bookings_Report_" + new Date().toISOString().split('T')[0] + ".csv";
             csvContent += "Booking ID,Court Name,Sport Type,Booked By,Match Date,Time Slot Frame\n";
-            GLOBAL_ADMIN_BOOKINGS.forEach(b => {
-                csvContent += `"${b.booking_id}","${b.court_name}","${b.sport_type}","${b.booked_by}","${b.date}","${b.time_slot}"\n`;
-            });
+            GLOBAL_ADMIN_BOOKINGS.forEach(b => { csvContent += `"${b.booking_id}","${b.court_name}","${b.sport_type}","${b.booked_by}","${b.date}","${b.time_slot}"\n`; });
         } else if (type === 'members') {
             filename = "Chirag_Club_Members_Roster_" + new Date().toISOString().split('T')[0] + ".csv";
             csvContent += "Resident Name,Registered Email,Whitelisted Unit Code,Current Available Tokens,Password Storage Signature\n";
-            GLOBAL_ADMIN_USERS.forEach(u => {
-                csvContent += `"${u.full_name}","${u.google_email}","${u.registration_code}","${u.available_tokens}","${u.password}"\n`;
-            });
+            GLOBAL_ADMIN_USERS.forEach(u => { csvContent += `"${u.full_name}","${u.google_email}","${u.registration_code}","${u.available_tokens}","${u.password}"\n`; });
         }
-
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
