@@ -7,8 +7,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🔗 Original Target Web App Endpoint
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbweQ2s9ZsXybKMBYmN2lqJqBi_YGCAIrY0dIIFnHwWg2RHxrCd5---fxtOmcpWdtb8wyQ/exec"; 
+// 🔗 Your Current Working Google Web App Endpoint
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec"; 
 
 let CACHED_USERS = [];
 let BOOKING_RECORDS = [];
@@ -17,7 +17,7 @@ let BOOKING_RECORDS = [];
 async function refreshDataPoolCache() {
   try {
     // 🛡️ STREAM CONNECTOR LOCK: Passing 'identity' forces raw uncompressed JSON.
-    // This permanently prevents Gzip premature stream terminations.
+    // This permanently prevents Gzip premature stream terminations on background sync.
     const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`, {
       headers: { 'Accept-Encoding': 'identity' }
     });
@@ -30,7 +30,7 @@ async function refreshDataPoolCache() {
       
       console.log(`✓ Cache successfully rehydrated. Users: ${CACHED_USERS.length}, Bookings: ${BOOKING_RECORDS.length}`);
     } else {
-      console.log("× Spreadsheet macro platform returned an invalid transmission header.");
+      console.log("× Google framework responded with an invalid transmission header.");
     }
   } catch(e) {
     console.log("Database Sync Connection Pause: Snapshot fetch latency step delayed:", e.message);
@@ -73,15 +73,21 @@ app.post('/api/register', async (req, res) => {
     updateValue: password
   };
 
-  const response = await fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await response.json();
-  
-  if(data.status === "success") await refreshDataPoolCache();
-  res.json(data);
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity' // 🛡️ CRASH PROTECTION FOR REGISTRATION POSTS
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if(data.status === "success") await refreshDataPoolCache();
+    res.json(data);
+  } catch (err) {
+    res.json({ status: "error", message: "Network transaction stream timeout." });
+  }
 });
 
 app.post('/api/secure-booking', async (req, res) => {
@@ -93,14 +99,21 @@ app.post('/api/secure-booking', async (req, res) => {
     bookingId, courtName, sportType, userName, date, timeSlot
   };
 
-  const response = await fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await response.json();
-  if(data.status === "success") await refreshDataPoolCache();
-  res.json(data);
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity' // 🛡️ CRASH PROTECTION FOR SECURE BOOKING POSTS
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if(data.status === "success") await refreshDataPoolCache();
+    res.json(data);
+  } catch (err) {
+    res.json({ status: "error", message: "Booking network stream timeout." });
+  }
 });
 
 app.post('/api/release-booking', async (req, res) => {
@@ -111,14 +124,21 @@ app.post('/api/release-booking', async (req, res) => {
     bookingId: bookingId
   };
 
-  const response = await fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await response.json();
-  if(data.status === "success") await refreshDataPoolCache();
-  res.json(data);
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity' // 🛡️ CRASH PROTECTION FOR DISMISSAL POSTS
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if(data.status === "success") await refreshDataPoolCache();
+    res.json(data);
+  } catch (err) {
+    res.json({ status: "error", message: "Cancellation network stream timeout." });
+  }
 });
 
 app.post('/api/reset-password', async (req, res) => {
@@ -129,14 +149,21 @@ app.post('/api/reset-password', async (req, res) => {
     email, fullName: "Pending Signup", registrationCode: verificationCode, password: newPassword
   };
 
-  const response = await fetch(GOOGLE_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await response.json();
-  if(data.status === "success") await refreshDataPoolCache();
-  res.json(data);
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity' // 🛡️ CRASH PROTECTION FOR PASSWORD OVERWRITES
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if(data.status === "success") await refreshDataPoolCache();
+    res.json(data);
+  } catch (err) {
+    res.json({ status: "error", message: "Password override network stream timeout." });
+  }
 });
 
 app.post('/api/admin/login', (req, res) => {
