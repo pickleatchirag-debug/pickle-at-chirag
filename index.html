@@ -19,7 +19,6 @@
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
 
-    /* Static Boot Overlay Panel */
     #appFirstBootSplashScreen {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -32,19 +31,6 @@
       transition: opacity 0.5s ease-out;
     }
   </style>
-
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/service-worker.js?v=2.0.0")
-          .then(reg => {
-            console.log("✓ Mobile App Engine Active.");
-            reg.update();
-          })
-          .catch(err => console.log("× Service Engine Error: ", err));
-      });
-    }
-  </script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans select-none flex flex-col justify-between pb-6">
 
@@ -233,12 +219,7 @@
   </footer>
 
   <script>
-    const TIME_SLOTS = [
-      "07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", 
-      "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00", 
-      "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", 
-      "19:00 - 20:00", "20:00 - 21:00"
-    ];
+    const TIME_SLOTS = ["07:00 - 08:00", "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", "19:00 - 20:00", "20:00 - 21:00"];
     let selectedUserAsset = "Pickleball Court 1", selectedUserDateStr = "", userActiveBookingsLogs = [], sessionMemberProfile = null;
     let selectedTentativeSlotMemory = "", activeUserLogTab = "upcoming", secureUserSessionToken = "";
     let deferredPromptInstance = null;
@@ -252,8 +233,6 @@
             }
         }, 1000);
         initiateSmartPwaBannerSystem();
-        
-        // 🚀 AUTO-LOGIN RUNTIME PULSE: Triggers immediately when page completes loading
         enforcePersistentThirtyDaySession();
     });
 
@@ -292,32 +271,20 @@
 
     function sanitizeUIDate(input) {
         if(!input) return "";
-        let str = input.toString().replace(/\s+/g, '').trim();
-        str = str.replace(/-/g, '/');
-        
+        let str = input.toString().replace(/\s+/g, '').trim().replace(/-/g, '/');
         if (str.includes('/')) {
             let parts = str.split('/');
             if (parts.length === 3) {
-                let d = parseInt(parts[0], 10);
-                let m = parseInt(parts[1], 10);
-                let y = parts[2];
-                if (parts[0].length === 4) {
-                    y = parseInt(parts[0], 10);
-                    m = parseInt(parts[1], 10);
-                    d = parseInt(parts[2], 10);
-                }
+                let d = parseInt(parts[0], 10); let m = parseInt(parts[1], 10); let y = parts[2];
+                if (parts[0].length === 4) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10); d = parseInt(parts[2], 10); }
                 return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
             }
             return str;
         }
-
         let timestampCheck = Date.parse(input);
         if (!isNaN(timestampCheck)) {
             let d = new Date(timestampCheck);
-            let day = String(d.getDate()).padStart(2, '0');
-            let month = String(d.getMonth() + 1).padStart(2, '0');
-            let year = d.getFullYear();
-            return `${day}/${month}/${year}`;
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
         }
         return str;
     }
@@ -373,7 +340,7 @@
         })
         .then(r => r.json())
         .then(res => {
-            if (res.status === "success" || res.result === "success") {
+            if (res.status === "success") {
                 alert("✓ Password overridden successfully! Database synced clean.");
                 document.getElementById('resetEmailField').value = "";
                 document.getElementById('resetCodeField').value = "";
@@ -403,7 +370,7 @@
         })
         .then(r => r.json())
         .then(res => {
-            if (res.status === "success" || res.result === "success") {
+            if (res.status === "success") {
                 alert("✓ Account initialization successful! You can now log into your profile desk.");
                 toggleInterfaceView('login'); 
             } else {
@@ -411,10 +378,6 @@
             }
         });
     }
-
-    // =================================================================
-    // ⚙️ AUTHENTICATION OVERHAUL WITH 30-DAY CACHE PROTOCOL            
-    // =================================================================
 
     function executeMemberLoginHandshake() {
         const email = document.getElementById('loginEmailField').value.trim();
@@ -430,10 +393,8 @@
         .then(r => r.json()).then(res => {
             if(res.status === "error") return alert(res.message);
             
-            // 💾 CACHE TRANSITION: Lock tokens to permanent Local Storage memory
             localStorage.setItem("chirag_pwa_token", res.token);
             localStorage.setItem("chirag_pwa_profile", JSON.stringify(res.user));
-            localStorage.setItem("chirag_pwa_active_tokens", res.activeTokens);
             localStorage.setItem("chirag_pwa_login_time", Date.now().toString());
 
             secureUserSessionToken = res.token;
@@ -442,7 +403,6 @@
             document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
             document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
             document.getElementById('lblWorkspaceAvailableTokens').innerText = res.activeTokens;
-            document.getElementById('systemGlobalTicker').innerText = res.ticker || "Welcome back to the portal loop.";
 
             toggleInterfaceView('workspace');
             initUserCalendarStrip();
@@ -455,21 +415,16 @@
         try {
             const savedToken = localStorage.getItem("chirag_pwa_token");
             const savedProfile = localStorage.getItem("chirag_pwa_profile");
-            const savedTokensCount = localStorage.getItem("chirag_pwa_active_tokens");
             const loginTime = localStorage.getItem("chirag_pwa_login_time");
 
             if (savedToken && savedProfile && loginTime) {
                 const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-                const timeElapsed = Date.now() - parseInt(loginTime, 10);
-
-                // 🛡️ Verify if session duration falls within 30 days limitation parameters
-                if (timeElapsed < thirtyDaysInMs) {
+                if (Date.now() - parseInt(loginTime, 10) < thirtyDaysInMs) {
                     secureUserSessionToken = savedToken;
                     sessionMemberProfile = JSON.parse(savedProfile);
 
                     document.getElementById('lblWorkspaceMemberName').innerText = sessionMemberProfile.full_name;
                     document.getElementById('lblWorkspaceMemberEmail').innerText = sessionMemberProfile.google_email;
-                    document.getElementById('lblWorkspaceAvailableTokens').innerText = savedTokensCount || "2";
                     
                     toggleInterfaceView('workspace');
                     initUserCalendarStrip();
@@ -477,31 +432,21 @@
                     return;
                 }
             }
-        } catch(e) {
-            console.log("Memory session rehydration paused safely:", e);
-        }
+        } catch(e) {}
     }
 
     function executeLogoutSequence() {
         if(confirm("Confirm logging out of active workspace context?")) {
-            // WIPE OUT PERSISTENT LOCAL STORAGE COMPLETELY
             localStorage.removeItem("chirag_pwa_token");
             localStorage.removeItem("chirag_pwa_profile");
-            localStorage.removeItem("chirag_pwa_active_tokens");
             localStorage.removeItem("chirag_pwa_login_time");
 
             sessionMemberProfile = null; secureUserSessionToken = ""; selectedTentativeSlotMemory = "";
             document.getElementById('loginEmailField').value = ""; document.getElementById('loginPasswordField').value = "";
             
             toggleInterfaceView('login');
-            document.getElementById('pwaGlobalInstallBanner').classList.remove('hidden');
-            initiateSmartPwaBannerSystem();
         }
     }
-
-    // =================================================================
-    // 📊 CORE APPLICATION RENDERING PIPELINES (100% UNTOUCHED)        
-    // =================================================================
 
     function startPollingLiveWorkspaceLogs() {
         syncUserLogsAndMatrix();
@@ -512,6 +457,17 @@
         if(!sessionMemberProfile) return;
         fetch('/api/fetch-logs', { method:'POST' }).then(r=>r.json()).then(res => {
             userActiveBookingsLogs = res.records || [];
+            
+            // Sync dynamic tokens directly from active future listings
+            const nowIST = getNowLocalIST();
+            const futureMatches = userActiveBookingsLogs.filter(b => {
+              if(b.booked_by !== sessionMemberProfile.full_name) return false;
+              const end = parseUIDateToAbsoluteObject(b.date, b.time_slot);
+              end.setHours(end.getHours() + 1);
+              return end > nowIST;
+            }).length;
+            document.getElementById('lblWorkspaceAvailableTokens').innerText = Math.max(0, 2 - futureMatches);
+
             renderUserMatrixGridUI();
             renderUserPersonalLedgerUI();
             renderGlobalClubLogUI();
@@ -575,7 +531,6 @@
                 action = "";
             } else if(rowMatch) {
                 let isMine = rowMatch.booked_by === sessionMemberProfile.full_name;
-                
                 if (isMine) {
                     cardStyle = "bg-red-950/20 border-red-500 text-red-400 font-bold cursor-pointer";
                     stateLabel = "Your Locked Session";
@@ -605,9 +560,7 @@
             .filter(b => b.booked_by === sessionMemberProfile.full_name)
             .map(b => { return { ...b, parsedTime: parseUIDateToAbsoluteObject(sanitizeUIDate(b.date), b.time_slot) }; });
 
-        let targetedRows = myParsedLogs.filter(b => {
-            return activeUserLogTab === "upcoming" ? b.parsedTime > nowIST : b.parsedTime <= nowIST;
-        });
+        let targetedRows = myParsedLogs.filter(b => activeUserLogTab === "upcoming" ? b.parsedTime > nowIST : b.parsedTime <= nowIST);
 
         if (activeUserLogTab === "upcoming") { targetedRows.sort((a, b) => a.parsedTime - b.parsedTime); } 
         else { targetedRows.sort((a, b) => b.parsedTime - a.parsedTime); }
@@ -619,7 +572,7 @@
 
         targetedRows.forEach(b => {
             let actionBtn = activeUserLogTab === "upcoming" 
-                ? `<button onclick="forceUserSelfRelease('${b.booking_id}')" class="text-[10px] bg-red-950/40 text-red-400 border border-red-900/40 px-2.5 py-1.5 rounded-lg font-black uppercase hover:bg-red-500 hover:text-slate-950 transition-all cursor-pointer">Cancel</button>` 
+                ? `<button onclick="forceUserSelfRelease('${b.booking_id}')" class="text-[10px] bg-red-950/40 text-red-400 border border-red-900/40 px-2.5 py-1.5 rounded-lg font-black uppercase hover:bg-red-50 hover:text-slate-950 transition-all cursor-pointer">Cancel</button>` 
                 : `<span class="text-[9px] bg-slate-950 text-slate-500 border border-slate-900 px-2 py-1 rounded font-black uppercase tracking-wide">Archived</span>`;
 
             container.innerHTML += `
@@ -635,8 +588,7 @@
 
     function renderGlobalClubLogUI() {
         const container = document.getElementById('globalClubLogLedgerContainer'); if(!container) return;
-        container.innerHTML = "";
-        const nowIST = getNowLocalIST();
+        container.innerHTML = ""; const nowIST = getNowLocalIST();
 
         let activeGlobalMatches = userActiveBookingsLogs.map(b => {
             return { ...b, absoluteMatchTime: parseUIDateToAbsoluteObject(sanitizeUIDate(b.date), b.time_slot) };
@@ -689,9 +641,7 @@
                 if(res.status === "success") {
                     alert("✓ Reservation canceled successfully!");
                     syncUserLogsAndMatrix();
-                } else {
-                    alert(res.message || "Unable to release session.");
-                }
+                } else { alert(res.message || "Unable to release session."); }
             });
         }
     }
@@ -716,9 +666,7 @@
                 alert("✓ Booking secured successfully!");
                 selectedTentativeSlotMemory = "";
                 syncUserLogsAndMatrix();
-            } else {
-                alert(res.message);
-            }
+            } else { alert(res.message); }
         });
     }
   </script>
