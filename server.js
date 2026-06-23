@@ -7,8 +7,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🔗 Your Current Working Google Web App Endpoint
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec"; 
+// 🔗 Your Current Live Working Google Web App Endpoint
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbweQ2s9ZsXybKMBYmN2lqJqBi_YGCAIrY0dIIFnHwWg2RHxrCd5---fxtOmcpWdtb8wyQ/exec"; 
 
 let CACHED_USERS = [];
 let BOOKING_RECORDS = [];
@@ -16,8 +16,6 @@ let BOOKING_RECORDS = [];
 // Snapshot Data Sync Pool Loop
 async function refreshDataPoolCache() {
   try {
-    // 🛡️ STREAM CONNECTOR LOCK: Passing 'identity' forces raw uncompressed JSON.
-    // This permanently prevents Gzip premature stream terminations on background sync.
     const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`, {
       headers: { 'Accept-Encoding': 'identity' }
     });
@@ -62,15 +60,14 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/register', async (req, res) => {
-  const { email, password } = req.body;
+  const { fullName, email, registrationCode, password } = req.body;
   
   const payload = {
-    action: "updateRow",
-    tabName: "Member_Directory",
-    keyColumn: "google_email",
-    keyValue: email,
-    updateColumn: "password",
-    updateValue: password
+    action: "initializeMemberOverwrite",
+    email: email,
+    fullName: fullName,
+    registrationCode: registrationCode,
+    password: password
   };
 
   try {
@@ -78,7 +75,7 @@ app.post('/api/register', async (req, res) => {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Accept-Encoding': 'identity' // 🛡️ CRASH PROTECTION FOR REGISTRATION POSTS
+        'Accept-Encoding': 'identity' 
       },
       body: JSON.stringify(payload)
     });
@@ -104,7 +101,7 @@ app.post('/api/secure-booking', async (req, res) => {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Accept-Encoding': 'identity' // 🛡️ CRASH PROTECTION FOR SECURE BOOKING POSTS
+        'Accept-Encoding': 'identity'
       },
       body: JSON.stringify(payload)
     });
@@ -129,7 +126,7 @@ app.post('/api/release-booking', async (req, res) => {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Accept-Encoding': 'identity' // 🛡️ CRASH PROTECTION FOR DISMISSAL POSTS
+        'Accept-Encoding': 'identity'
       },
       body: JSON.stringify(payload)
     });
@@ -141,12 +138,20 @@ app.post('/api/release-booking', async (req, res) => {
   }
 });
 
+// =================================================================
+// 🛡️ RECOVERY FIX: PASSES VERIFICATION DOWN TO THE SCRIPT ENGINE
+// =================================================================
 app.post('/api/reset-password', async (req, res) => {
   const { email, verificationCode, newPassword } = req.body;
   
   const payload = {
-    action: "initializeMemberOverwrite",
-    email, fullName: "Pending Signup", registrationCode: verificationCode, password: newPassword
+    action: "updateRow",
+    tabName: "Member_Directory",
+    keyColumn: "google_email",
+    keyValue: email,
+    updateColumn: "password",
+    updateValue: newPassword,
+    verificationCode: verificationCode // Passes Unique ID down to script
   };
 
   try {
@@ -154,7 +159,7 @@ app.post('/api/reset-password', async (req, res) => {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Accept-Encoding': 'identity' // 🛡️ CRASH PROTECTION FOR PASSWORD OVERWRITES
+        'Accept-Encoding': 'identity'
       },
       body: JSON.stringify(payload)
     });
@@ -175,7 +180,7 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-app.post('/api/admin/get-users', (req, res) => {
+app.post('/api/admin/get-users', async (req, res) => {
   res.json({ users: CACHED_USERS });
 });
 
