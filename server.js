@@ -7,30 +7,30 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ⚠️ PASTE YOUR RE-DEPLOYED APPS SCRIPT WEB APP URL HERE:
+// 🔗 Original Target Web App Endpoint
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec"; 
 
 let CACHED_USERS = [];
 let BOOKING_RECORDS = [];
 
-// Helper Time Parser for IST Constraints
-function getNowLocalIST() { return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })); }
-
-// 🔄 THE ORIGINAL SNAPSHOT CACHE PIPELINE
+// Snapshot Data Sync Pool Loop
 async function refreshDataPoolCache() {
   try {
-    // Queries your true macro endpoint signature function
-    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`);
+    // 🛡️ STREAM CONNECTOR LOCK: Passing 'identity' forces raw uncompressed JSON.
+    // This permanently prevents Gzip premature stream terminations.
+    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`, {
+      headers: { 'Accept-Encoding': 'identity' }
+    });
+    
     if (response.ok) {
       const snapshot = await response.json();
       
-      // Map arrays directly out of the unified structure payload object
       if (snapshot && snapshot.users) CACHED_USERS = snapshot.users;
       if (snapshot && snapshot.bookings) BOOKING_RECORDS = snapshot.bookings;
       
-      console.log(`✓ Cache Synchronized successfully. Users: ${CACHED_USERS.length}, Bookings: ${BOOKING_RECORDS.length}`);
+      console.log(`✓ Cache successfully rehydrated. Users: ${CACHED_USERS.length}, Bookings: ${BOOKING_RECORDS.length}`);
     } else {
-      console.log("× Spreadsheet pipeline returned non-200 state header.");
+      console.log("× Spreadsheet macro platform returned an invalid transmission header.");
     }
   } catch(e) {
     console.log("Database Sync Connection Pause: Snapshot fetch latency step delayed:", e.message);
