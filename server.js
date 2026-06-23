@@ -12,10 +12,13 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbweQ2s9ZsXybK
 
 let CACHED_USERS = [];
 let BOOKING_RECORDS = [];
+let CACHED_ADMINS = [];
 
 // Snapshot Data Sync Pool Loop
 async function refreshDataPoolCache() {
   try {
+    // 🛡️ STREAM CONNECTOR LOCK: Passing 'identity' forces raw uncompressed JSON.
+    // This permanently prevents Gzip premature stream terminations on background sync.
     const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSnapshot`, {
       headers: { 'Accept-Encoding': 'identity' }
     });
@@ -25,8 +28,9 @@ async function refreshDataPoolCache() {
       
       if (snapshot && snapshot.users) CACHED_USERS = snapshot.users;
       if (snapshot && snapshot.bookings) BOOKING_RECORDS = snapshot.bookings;
+      if (snapshot && snapshot.admins) CACHED_ADMINS = snapshot.admins;
       
-      console.log(`✓ Cache successfully rehydrated. Users: ${CACHED_USERS.length}, Bookings: ${BOOKING_RECORDS.length}`);
+      console.log(`✓ Cache successfully rehydrated. Users: ${CACHED_USERS.length}, Bookings: ${BOOKING_RECORDS.length}, Admins: ${CACHED_ADMINS.length}`);
     } else {
       console.log("× Google framework responded with an invalid transmission header.");
     }
@@ -138,9 +142,6 @@ app.post('/api/release-booking', async (req, res) => {
   }
 });
 
-// =================================================================
-// 🛡️ RECOVERY FIX: PASSES VERIFICATION DOWN TO THE SCRIPT ENGINE
-// =================================================================
 app.post('/api/reset-password', async (req, res) => {
   const { email, verificationCode, newPassword } = req.body;
   
@@ -151,7 +152,7 @@ app.post('/api/reset-password', async (req, res) => {
     keyValue: email,
     updateColumn: "password",
     updateValue: newPassword,
-    verificationCode: verificationCode // Passes Unique ID down to script
+    verificationCode: verificationCode
   };
 
   try {
@@ -171,13 +172,31 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
+// =================================================================
+// 🛡️ ADMIN LOGIN HANDSHAKE: ULTRA-RESILIENT AUTOCONNECT LAYER
+// =================================================================
 app.post('/api/admin/login', (req, res) => {
-  const { email, password } = req.body;
-  if(email === "admin@email.com" && password === "1qaz2wsx") {
-    res.json({ token: "adm_secure_token_layer", name: "System Manager" });
-  } else {
-    res.status(401).json({ message: "Unauthorized Entry Key." });
+  const inputEmail = (req.body.email || "").toLowerCase().trim();
+  const inputPassword = (req.body.password || "").trim();
+
+  // 1st Priority: Match dynamically against your spreadsheet's Admin_Directory tab array
+  if (CACHED_ADMINS.length > 0) {
+    const dynamicAdmin = CACHED_ADMINS.find(a => 
+      (a.email || "").toLowerCase().trim() === inputEmail && 
+      (a.password || "").trim() === inputPassword
+    );
+    
+    if (dynamicAdmin) {
+      return res.json({ token: "adm_secure_token_layer", name: dynamicAdmin.full_name || "System Manager" });
+    }
   }
+
+  // 2nd Priority / Hard Failover: Master credential key pass to prevent locking you out
+  if (inputEmail === "admin@email.com" && inputPassword === "1qaz2wsx") {
+    return res.json({ token: "adm_secure_token_layer", name: "System Manager" });
+  }
+
+  res.status(401).json({ message: "Unauthorized Entry Key Parameters." });
 });
 
 app.post('/api/admin/get-users', async (req, res) => {
