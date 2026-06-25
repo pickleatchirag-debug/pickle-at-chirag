@@ -7,8 +7,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// 🔗 Your Current Live Working Google Web App Endpoint
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbweQ2s9ZsXybKMBYmN2lqJqBi_YGCAIrY0dIIFnHwWg2RHxrCd5---fxtOmcpWdtb8wyQ/exec"; 
+// 🔗 Your Live Working Google Web App Endpoint
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_elXprUxfCPl1WYiPx2gc6TWpohNY-osHhfGgxeZBacn1vimm433n7sHUx2AvuVvHtg/exec"; 
 
 let CACHED_USERS = [];
 let BOOKING_RECORDS = [];
